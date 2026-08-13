@@ -1,0 +1,29 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temp runtime audio files & cache
+backend/tmp/
+tmp/
+*.mp3
+*.wav
+*.ogg
+*.m4a
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Scratch & temporary logs
+scratch/
+logs/
+*.log

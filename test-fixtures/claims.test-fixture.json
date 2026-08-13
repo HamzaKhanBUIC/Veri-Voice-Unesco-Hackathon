@@ -1,0 +1,50 @@
+[
+  {
+    "id": "fixture-earth-001",
+    "language": "ur",
+    "claim": "زمین سورج کے گرد گردش کرتی ہے۔",
+    "verdict": "TRUE",
+    "explanation": "زمین نظام شمسی کا ایک سیارہ ہے جو سورج کے گرد بیضوی مدار میں گردش کرتا ہے۔ (ٹیسٹ فکسچر - طبی مواد نہیں ہے)",
+    "keywords": ["زمین", "سورج", "گردش", "سیارہ", "earth", "sun", "orbit"],
+    "sources": [
+      {
+        "title": "Solar System Exploration",
+        "organization": "Test Astronomy Catalog",
+        "url": "https://example.org/astronomy/earth-orbit",
+        "accessedAt": "2026-08-10"
+      }
+    ]
+  },
+  {
+    "id": "fixture-moon-002",
+    "language": "ur",
+    "claim": "چاند پنیر کا بنا ہوا ہے۔",
+    "verdict": "FALSE",
+    "explanation": "چاند پنیر کا نہیں بلکہ چٹانوں اور مٹی سے بنا ایک قدرتی سیارچہ ہے۔ (ٹیسٹ فکسچر - طبی مواد نہیں ہے)",
+    "keywords": ["چاند", "پنیر", "چٹان", "moon", "cheese"],
+    "sources": [
+      {
+        "title": "Lunar Composition Survey",
+        "organization": "Test Space Agency",
+        "url": "https://example.org/space/moon-composition",
+        "accessedAt": "2026-08-10"
+      }
+    ]
+  },
+  {
+    "id": "fixture-water-003",
+    "language": "ur",
+    "claim": "پانی دو حصے ہائیڈروجن اور ایک حصہ آکسیجن پر مشتمل ہے۔",
+    "verdict": "TRUE",
+    "explanation": "پانی کا کیمیائی فارمولا H2O ہے جس میں ہائیڈروجن اور آکسیجن کے ایٹم موجود ہوتے ہیں۔ (ٹیسٹ فکسچر - طبی مواد نہیں ہے)",
+    "keywords": ["پانی", "ہائیڈروجن", "آکسیجن", "water", "hydrogen", "oxygen"],
+    "sources": [
+      {
+        "title": "Chemical Compound Data",
+        "organization": "Test Chemistry Reference",
+        "url": "https://example.org/chemistry/water-h2o",
+        "accessedAt": "2026-08-10"
+      }
+    ]
+  }
+]

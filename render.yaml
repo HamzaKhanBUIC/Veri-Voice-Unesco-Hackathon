@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: verivoice
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SPEECH_PROVIDER
+        value: speechmatics
+      - key: TTS_PROVIDER
+        value: edge-tts
+      - key: LLM_PROVIDER
+        value: groq
+      - key: DISCORD_MAX_FILE_SIZE_MB
+        value: "15"

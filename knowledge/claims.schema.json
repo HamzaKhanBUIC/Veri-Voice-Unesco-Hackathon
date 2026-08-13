@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VeriVoiceClaimsKnowledgeBase",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "claim", "truth", "explanation", "keywords", "sources"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Unique identifier for the claim (e.g. claim-polio-001)"
+      },
+      "claim": {
+        "type": "string",
+        "description": "Text statement of the rumor or claim in Urdu/English"
+      },
+      "truth": {
+        "type": "string",
+        "enum": ["TRUE", "FALSE", "UNCERTAIN"],
+        "description": "Factual classification verdict"
+      },
+      "explanation": {
+        "type": "string",
+        "description": "Simple clear explanation in Urdu"
+      },
+      "keywords": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of normalized search keywords in Urdu and English"
+      },
+      "sources": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["organization", "title", "url"],
+          "properties": {
+            "organization": {
+              "type": "string",
+              "description": "Name of authoritative health organization (e.g. WHO, NIH Pakistan)"
+            },
+            "title": {
+              "type": "string",
+              "description": "Title of publication or report"
+            },
+            "url": {
+              "type": "string",
+              "description": "Direct URL reference"
+            }
+          }
+        }
+      }
+    }
+  }
+}

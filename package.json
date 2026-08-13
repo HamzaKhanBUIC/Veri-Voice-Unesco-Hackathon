@@ -1,0 +1,38 @@
+{
+  "name": "verivoice",
+  "version": "0.1.0",
+  "description": "VeriVoice - WhatsApp voice-based claim verification prototype for Urdu health rumors",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "nodemon backend/src/server.js",
+    "test": "jest --detectOpenHandles",
+    "doctor": "node scripts/doctor.js",
+    "setup:check": "node scripts/setup-check.js",
+    "verify:real": "node scripts/verifyReal.js",
+    "pipeline": "node backend/src/cli/runPipeline.js",
+    "retrieve": "node backend/src/cli/runRetrieval.js",
+    "verify": "node backend/src/cli/runVerification.js"
+  },
+  "keywords": [
+    "verivoice",
+    "fact-checking",
+    "whatsapp",
+    "urdu",
+    "health"
+  ],
+  "author": "VeriVoice Team",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "discord.js": "^14.27.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
+  }
+}

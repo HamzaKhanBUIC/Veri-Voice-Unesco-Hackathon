@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VeriVoice — Urdu Health Voice Verification Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent-green: #10b981;
+      --accent-red: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-blue: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: 'Noto Naskh Arabic', 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: #c4b5fd;
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.35rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.65rem 1rem;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-section {
+      display: none;
+    }
+
+    .input-section.active {
+      display: block;
+    }
+
+    /* Record Voice UI */
+    .record-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      gap: 1rem;
+      text-align: center;
+    }
+
+    .mic-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border: none;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+    }
+
+    .mic-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .mic-btn.recording {
+      animation: pulse-ring 1.5s infinite;
+      background: linear-gradient(135deg, var(--accent-red), #e11d48);
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.6); }
+      70% { box-shadow: 0 0 0 20px rgba(244, 63, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+    }
+
+    .timer {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent-blue);
+    }
+
+    /* File Upload & Text UI */
+    textarea, input[type="file"] {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      color: var(--text-main);
+      padding: 1rem;
+      font-family: inherit;
+      font-size: 1rem;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent-purple);
+    }
+
+    .chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      padding: 0.4rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chip:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-purple), #6366f1);
+      color: white;
+      border: none;
+      padding: 0.9rem;
+      border-radius: 0.75rem;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Stepper & Results */
+    .status-stepper {
+      display: none;
+      margin-top: 1.5rem;
+      border-top: 1px solid var(--card-border);
+      padding-top: 1.5rem;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    .step-item.active {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    .step-item.done {
+      color: var(--accent-green);
+    }
+
+    .results-card {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .verdict-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .verdict-badge {
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .verdict-TRUE { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .verdict-FALSE { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .verdict-MIXED { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+    .verdict-UNCERTAIN { background: rgba(6, 182, 212, 0.2); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+
+    .explanation-box {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    .audio-player-box {
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    audio {
+      width: 100%;
+      border-radius: 0.5rem;
+    }
+
+    .meta-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .meta-card {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-badge">⚡ VeriVoice AI Pipeline Live Demo</div>
+      <h1>اردو صحت کی خبروں کی صوتی تصدیق</h1>
+      <p class="subtitle">صوتی پیغام ریکارڈ کریں یا تحریری دعویٰ داخل کریں اور فوری طور پر مستند صوتی وضاحت حاصل کریں۔</p>
+    </header>
+
+    <div class="glass-card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('mic')">🎙️ آواز ریکارڈ کریں</button>
+        <button class="tab-btn" onclick="switchTab('text')">⌨️ تحریری دعویٰ</button>
+        <button class="tab-btn" onclick="switchTab('file')">📁 آڈیو فائل اپلوڈ</button>
+      </div>
+
+      <!-- Tab 1: Mic Recording -->
+      <div id="tab-mic" class="input-section active">
+        <div class="record-box">
+          <button id="recordBtn" class="mic-btn" onclick="toggleRecording()">🎙️</button>
+          <div id="recordStatus" style="font-weight: 600;">مائیکروفون پر کلک کر کے بات کریں</div>
+          <div id="timer" class="timer">00:00</div>
+          <audio id="audioPreview" controls style="display: none; margin-top: 1rem;"></audio>
+        </div>
+      </div>
+
+      <!-- Tab 2: Text Input -->
+      <div id="tab-text" class="input-section">
+        <textarea id="textClaimInput" rows="3" placeholder="مثال: پولیو کے قطرے بچوں کو معذوری سے بچاتے ہیں..."></textarea>
+        <div style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">تجویز کردہ نمونہ دعوے (کلک کریں):</div>
+        <div class="chip-container">
+          <div class="chip" onclick="setSampleClaim('پولیو کے قطرے بچوں کے لیے محفوظ اور ضروری ہیں')">پولیو قطرے (TRUE)</div>
+          <div class="chip" onclick="setSampleClaim('لہسن کھانے سے کورونا وائرس کا علاج ہو جاتا ہے')">لہسن اور کورونا (FALSE)</div>
+          <div class="chip" onclick="setSampleClaim('ڈینگی کا مادہ مچھر صاف کھڑے پانی میں انڈے دیتا ہے')">ڈینگی بچاؤ (TRUE)</div>
+          <div class="chip" onclick="setSampleClaim('ویکسین لگوانے سے شدید بیماریاں پیدا ہوتی ہیں')">ویکسین افواہ (FALSE)</div>
+        </div>
+      </div>
+
+      <!-- Tab 3: File Upload -->
+      <div id="tab-file" class="input-section">
+        <input type="file" id="audioFileInput" accept="audio/*">
+        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">تائید شدہ فارمیٹس: MP3, WAV, OGG, M4A</div>
+      </div>
+
+      <button id="submitBtn" class="submit-btn" onclick="submitVerification()">
+        <span>تصدیق کیجیے</span> ✨
+      </button>
+
+      <!-- Progress Stepper -->
+      <div id="statusStepper" class="status-stepper">
+        <div id="step-stt" class="step-item">🎙️ step 1: صوتی پیغام کا متن تیار کیا جا رہا ہے (Groq Whisper)...</div>
+        <div id="step-retrieval" class="step-item">🔍 step 2: مستند طبی ڈیٹا بیس سے شواہد کی تلاش...</div>
+        <div id="step-llm" class="step-item">🤖 step 3: Groq Llama 3.3 70B کے ذریعے تصدیق کا تجزیہ...</div>
+        <div id="step-tts" class="step-item">🔊 step 4: نیورل اردو صوتی جواب کی تیاری (Edge TTS)...</div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsCard" class="glass-card results-card">
+      <div class="verdict-header">
+        <div>
+          <span style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">نتیجہ (Verdict)</span>
+          <div id="verdictBadge" class="verdict-badge">TRUE</div>
+        </div>
+        <div style="text-align: left; font-family: 'Outfit', sans-serif;">
+          <span style="color: var(--text-muted); font-size: 0.85rem; display: block;">Confidence Score</span>
+          <span id="confidenceScore" style="font-weight: 700; font-size: 1.25rem; color: var(--accent-blue);">0.95</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <span style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">صارف کا دعویٰ (User Claim Transcript)</span>
+        <div id="userTranscriptText" style="font-weight: 600; color: var(--text-main); font-size: 1.05rem;"></div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <span style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">مستند طبی وضاحت (Urdu Response)</span>
+        <div id="explanationText" class="explanation-box"></div>
+      </div>
+
+      <!-- Spoken Audio Response Player -->
+      <div class="audio-player-box">
+        <span style="font-weight: 600; font-size: 0.95rem; color: #c4b5fd;">🔊 صوتی جواب سنیں (Spoken Response Player):</span>
+        <audio id="responseAudioPlayer" controls autoplay></audio>
+      </div>
+
+      <!-- Pipeline Execution Telemetry -->
+      <div class="meta-info">
+        <div class="meta-card">
+          <div style="color: var(--text-muted);">STT Engine</div>
+          <div id="metaSttProvider" style="font-weight: 600; color: var(--text-main);">Groq Whisper</div>
+        </div>
+        <div class="meta-card">
+          <div style="color: var(--text-muted);">LLM Provider</div>
+          <div id="metaLlmProvider" style="font-weight: 600; color: var(--text-main);">Groq Llama 3.3 70B</div>
+        </div>
+        <div class="meta-card">
+          <div style="color: var(--text-muted);">Total Pipeline Time</div>
+          <div id="metaTotalTime" style="font-weight: 600; color: var(--accent-green);">1.85s</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeTab = 'mic';
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordedBlob = null;
+    let recordStartTime = null;
+    let timerInterval = null;
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    function setSampleClaim(claim) {
+      document.getElementById('textClaimInput').value = claim;
+    }
+
+    async function toggleRecording() {
+      const recordBtn = document.getElementById('recordBtn');
+      const statusText = document.getElementById('recordStatus');
+      const timerEl = document.getElementById('timer');
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        statusText.innerText = 'ریکارڈنگ مکمل ہو گئی۔ تصدیق پر کلک کریں۔';
+        clearInterval(timerInterval);
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const preview = document.getElementById('audioPreview');
+          preview.src = URL.createObjectURL(recordedBlob);
+          preview.style.display = 'block';
+        };
+
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        statusText.innerText = 'بات کر رہے ہیں... (ریکارڈنگ جاری ہے)';
+        recordStartTime = Date.now();
+
+        timerInterval = setInterval(() => {
+          const seconds = Math.floor((Date.now() - recordStartTime) / 1000);
+          const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+          const secs = String(seconds % 60).padStart(2, '0');
+          timerEl.innerText = `${mins}:${secs}`;
+        }, 1000);
+
+      } catch (err) {
+        alert('مائیکروفون تک رسائی ممکن نہیں ہوئی۔ برائے مہربانی اجازت دیں۔');
+      }
+    }
+
+    async function submitVerification() {
+      const submitBtn = document.getElementById('submitBtn');
+      const stepper = document.getElementById('statusStepper');
+      const resultsCard = document.getElementById('resultsCard');
+
+      submitBtn.disabled = true;
+      stepper.style.display = 'block';
+      resultsCard.style.display = 'none';
+
+      let payload = {};
+
+      if (activeTab === 'mic') {
+        if (!recordedBlob) {
+          alert('برائے مہربانی پہلے آواز ریکارڈ کریں۔');
+          submitBtn.disabled = false;
+          stepper.style.display = 'none';
+          return;
+        }
+        const base64 = await blobToBase64(recordedBlob);
+        payload = { audioBase64: base64, fileExt: 'webm' };
+      } else if (activeTab === 'text') {
+        const claimText = document.getElementById('textClaimInput').value;
+        if (!claimText || claimText.trim().length === 0) {
+          alert('برائے مہربانی تحریری دعویٰ داخل کریں۔');
+          submitBtn.disabled = false;
+          stepper.style.display = 'none';
+          return;
+        }
+        payload = { claimText: claimText.trim() };
+      } else if (activeTab === 'file') {
+        const fileInput = document.getElementById('audioFileInput');
+        if (!fileInput.files[0]) {
+          alert('برائے مہربانی آڈیو فائل منتخب کریں۔');
+          submitBtn.disabled = false;
+          stepper.style.display = 'none';
+          return;
+        }
+        const file = fileInput.files[0];
+        const base64 = await blobToBase64(file);
+        const ext = file.name.split('.').pop();
+        payload = { audioBase64: base64, fileExt: ext };
+      }
+
+      try {
+        const response = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'تصدیق میں ناکامی ہوئی');
+        }
+
+        // Display Results
+        document.getElementById('verdictBadge').innerText = data.verdict;
+        document.getElementById('verdictBadge').className = `verdict-badge verdict-${data.verdict}`;
+        document.getElementById('confidenceScore').innerText = data.confidence || '0.95';
+        document.getElementById('userTranscriptText').innerText = data.userClaim;
+        document.getElementById('explanationText').innerText = data.explanation;
+
+        document.getElementById('responseAudioPlayer').src = data.audioUrl;
+        document.getElementById('metaSttProvider').innerText = data.providers.stt;
+        document.getElementById('metaLlmProvider').innerText = data.providers.llm;
+        document.getElementById('metaTotalTime').innerText = `${data.timing.totalSeconds}s`;
+
+        resultsCard.style.display = 'block';
+
+      } catch (err) {
+        alert(`خرابی: ${err.message}`);
+      } finally {
+        submitBtn.disabled = false;
+        stepper.style.display = 'none';
+      }
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  </script>
+</body>
+</html>
