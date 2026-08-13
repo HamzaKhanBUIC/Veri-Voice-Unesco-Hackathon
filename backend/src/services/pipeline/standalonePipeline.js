@@ -24,6 +24,7 @@ class StandalonePipeline {
    * Runs end-to-end audio processing pipeline.
    * @param {string} inputAudioPath - Path to input voice file (.ogg, .mp3, .wav)
    * @param {string} [outputAudioPath] - Optional custom path for output audio file
+   * @param {object} [options] - Options including requestId and captionText
    * @returns {Promise<object>} Pipeline execution result and performance report
    */
   async processAudio(inputAudioPath, outputAudioPath, options = {}) {
@@ -44,22 +45,26 @@ class StandalonePipeline {
     const sttStart = Date.now();
     let sttResult = null;
 
-    try {
-      if (this.speechProvider) {
-        sttResult = await this.speechProvider.transcribe(validation.details.path, { language: 'auto' });
-      }
-    } catch (err) {
-      console.warn(`⚠️ [${requestId}] Primary STT provider failed: ${err.message}. Switching to Whisper ASR...`);
-    }
-
-    // Fallback to Groq Whisper if primary STT failed or returned empty text
-    if (!sttResult || !sttResult.text || sttResult.text.trim() === '') {
+    // Use WhisperProvider as the primary ASR engine when GROQ_API_KEY is available (fastest multi-language ASR)
+    const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+    if (apiKey && !apiKey.includes('your_') && apiKey !== 'placeholder') {
       try {
         const WhisperProvider = require('../speech/WhisperProvider');
-        const whisper = new WhisperProvider();
+        const whisper = new WhisperProvider(apiKey);
         sttResult = await whisper.transcribe(validation.details.path, { language: null });
-      } catch (whisperErr) {
-        console.warn(`⚠️ [${requestId}] Whisper STT fallback failed: ${whisperErr.message}`);
+      } catch (err) {
+        console.warn(`⚠️ [${requestId}] Groq Whisper ASR failed: ${err.message}. Switching to secondary ASR provider...`);
+      }
+    }
+
+    // Fallback to configured secondary STT provider (e.g. Speechmatics or MockSpeech)
+    if (!sttResult || !sttResult.text || sttResult.text.trim() === '') {
+      if (this.speechProvider) {
+        try {
+          sttResult = await this.speechProvider.transcribe(validation.details.path, { language: 'auto' });
+        } catch (err) {
+          console.warn(`⚠️ [${requestId}] Secondary STT provider failed: ${err.message}`);
+        }
       }
     }
 
@@ -117,20 +122,17 @@ class StandalonePipeline {
       audioPath: ttsResult.outputPath,
       transcript: sttResult.text,
       language: detectedLang,
-      responseText,
       verdict,
       confidence,
+      responseText,
       isStub,
       timing: {
         sttMs,
         verificationMs: verifMs,
+        verifMs,
         ttsMs,
         totalMs,
-        totalSeconds: (totalMs / 1000).toFixed(2),
-      },
-      providers: {
-        speech: this.speechProvider.name,
-        tts: this.ttsProvider.name,
+        totalSeconds: parseFloat((totalMs / 1000).toFixed(2)),
       },
     };
   }

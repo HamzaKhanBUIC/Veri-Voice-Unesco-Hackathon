@@ -2,6 +2,7 @@ const DiscordClient = require('./DiscordClient');
 const DiscordMedia = require('./DiscordMedia');
 const DiscordCommands = require('./DiscordCommands');
 const StandalonePipeline = require('../pipeline/standalonePipeline');
+const WhisperProvider = require('../speech/WhisperProvider');
 const SpeechmaticsProvider = require('../speech/SpeechmaticsProvider');
 const EdgeTTSProvider = require('../tts/EdgeTTSProvider');
 const VerificationEngine = require('../verification/verificationEngine');
@@ -18,10 +19,10 @@ class DiscordService {
   constructor(options = {}) {
     this.clientWrapper = options.clientWrapper || new DiscordClient();
 
-    // Default to real production-grade providers
-    const defaultSpeechProvider = process.env.SPEECHMATICS_API_KEY
-      ? new SpeechmaticsProvider()
-      : null;
+    // Default to Groq Whisper for fast multi-language ASR (Indonesian, Urdu, Spanish, English)
+    const defaultSpeechProvider = process.env.GROQ_API_KEY
+      ? new WhisperProvider()
+      : (process.env.SPEECHMATICS_API_KEY ? new SpeechmaticsProvider() : null);
     const defaultTtsProvider = new EdgeTTSProvider();
     const defaultRetrieval = new RetrievalService();
     const defaultVerificationEngine = new VerificationEngine();
@@ -85,7 +86,6 @@ class DiscordService {
       });
 
       if (audioAttachment) {
-        // Explicit Audio + Text handling: pass message text context if user provided a text caption
         const captionText = message.content ? message.content.replace(/<@!?\d+>/g, '').trim() : '';
         await this.handleAudioAttachment(message, audioAttachment, { requestId, captionText });
         return;
@@ -198,6 +198,8 @@ class DiscordService {
 
       const lang = pipelineResult.language || 'ur';
       const isUrdu = lang === 'ur' || lang === 'ur-Roman';
+      const isIndonesian = lang === 'id';
+      const isSpanish = lang === 'es';
 
       const verdictBadge = pipelineResult.verdict === 'TRUE' ? '🟢 TRUE' :
                           pipelineResult.verdict === 'FALSE' ? '🔴 FALSE' :
@@ -205,7 +207,9 @@ class DiscordService {
                           pipelineResult.verdict === 'RESEARCH_RESPONSE' ? '🔬 RESEARCH RESPONSE' :
                           '⚪ UNCERTAIN (Insufficient Evidence)';
 
-      const headerTitle = isUrdu ? '🎙️ VERIVOICE وائس تصدیق' : '🎙️ VERIVOICE VOICE VERIFICATION';
+      const headerTitle = isUrdu ? '🎙️ VERIVOICE وائس تصدیق' :
+                          isIndonesian ? '🎙️ VERISTOICE VERIFIKASI SUARA' :
+                          isSpanish ? '🎙️ VERIVOICE VERIFICACIÓN DE VOZ' : '🎙️ VERIVOICE VOICE VERIFICATION';
       const transcriptLabel = isUrdu ? 'متن (Transcript)' : 'Transcript';
       const verdictLabel = isUrdu ? 'نتیجہ (Verdict)' : 'Verdict';
       const explanationLabel = isUrdu ? 'تفصیل (Explanation)' : 'Explanation';
