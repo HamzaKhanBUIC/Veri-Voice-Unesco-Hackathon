@@ -1,4 +1,5 @@
 const MockVerificationProvider = require('./MockVerificationProvider');
+const GroqVerificationProvider = require('./GroqVerificationProvider');
 const { validateVerdict } = require('../../models/verdictSchema');
 const { createUncertainFallback, FALLBACK_REASONS } = require('./fallback');
 const LanguageDetector = require('../language/LanguageDetector');
@@ -14,10 +15,17 @@ const { EvidenceEvaluator } = require('./EvidenceEvaluator');
 class VerificationEngine {
   /**
    * @param {object} [options]
-   * @param {VerificationProvider} [options.provider] - LLM provider instance (default: MockVerificationProvider)
+   * @param {VerificationProvider} [options.provider] - LLM provider instance (default: GroqVerificationProvider if GROQ_API_KEY present, else MockVerificationProvider)
    */
   constructor(options = {}) {
-    this.provider = options.provider || new MockVerificationProvider();
+    if (options.provider) {
+      this.provider = options.provider;
+    } else {
+      const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+      const apiKey = process.env.GROQ_API_KEY;
+      const hasValidKey = apiKey && !apiKey.includes('your_') && apiKey !== 'placeholder' && !isTestEnv;
+      this.provider = hasValidKey ? new GroqVerificationProvider() : new MockVerificationProvider();
+    }
   }
 
   /**
@@ -30,10 +38,10 @@ class VerificationEngine {
   async verifyClaim(userText, evidenceMatches = [], options = {}) {
     // 1. Language Preservation & Detection
     const languageMetadata = LanguageDetector.detect(userText);
-    const lang = languageMetadata.detectedLanguage || 'ur';
+    const lang = options.targetLanguage || languageMetadata.verificationLanguage || 'ur';
 
     // 2. Intent & Domain Detection
-    const mode = options.mode || 'VERIFICATION';
+    const mode = options.mode || IntentDetector.detect(userText);
     const domainResult = DomainDetector.detect(userText, options.requestedDomain);
     const domain = domainResult.domain;
 
@@ -59,40 +67,22 @@ class VerificationEngine {
       };
     }
 
-    // Deterministic Fallback if no evidence matches
-    if (!enhancedMatches || enhancedMatches.length === 0) {
-      if (mode === 'GENERAL_RESEARCH') {
-        return {
-          mode: 'GENERAL_RESEARCH',
-          domain,
-          answer: 'dastiyab muatbar maloomat ke mutabiq is sawal ka jawab filhal munasib shawahid ke sath dastiyab nahi hai.',
-          explanation: 'No direct evidence retrieved from authoritative sources.',
-          evidenceStrength: 'NO_EVIDENCE',
-          confidence: 'LOW',
-          sources: [],
-          languageMetadata,
-          reason: 'NO_EVIDENCE',
-        };
-      }
-
+    // 5. Zero-Evidence Safe Bounding Rule
+    if (evalResult.evidenceStrength === 'NO_EVIDENCE' || !enhancedMatches || enhancedMatches.length === 0) {
       const fallback = createUncertainFallback(FALLBACK_REASONS.NO_EVIDENCE, null, lang);
       return {
         ...fallback,
-        mode: 'VERIFICATION',
+        mode,
         domain,
         evidenceStrength: 'NO_EVIDENCE',
-        confidence: 'LOW',
         languageMetadata,
         sources: [],
       };
     }
 
-    // Build allow-list of valid Evidence IDs & Source URLs
-    const allowlistedIds = new Set(enhancedMatches.map((m) => m.claimId));
-
+    // 6. Provider LLM Verification Execution
     let rawResponse;
     try {
-      // Invoke LLM Provider with prompt isolation
       rawResponse = await this.provider.verify(userText, enhancedMatches, { mode, targetLanguage: lang });
     } catch (err) {
       console.warn(`⚠️ Verification Engine: Provider execution error: ${err.message}`);
@@ -102,13 +92,12 @@ class VerificationEngine {
         mode,
         domain,
         evidenceStrength: evalResult.evidenceStrength,
-        confidence: 'LOW',
         languageMetadata,
         sources: [],
       };
     }
 
-    // Safe JSON Parsing
+    // 7. Schema Validation & Parsing
     let parsed;
     try {
       parsed = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
@@ -120,31 +109,11 @@ class VerificationEngine {
         mode,
         domain,
         evidenceStrength: evalResult.evidenceStrength,
-        confidence: 'LOW',
         languageMetadata,
         sources: [],
       };
     }
 
-    // Verdict Sanitization & Normalization
-    if (parsed && typeof parsed.verdict === 'string') {
-      const vUpper = parsed.verdict.toUpperCase().trim();
-      const validVerdicts = ['TRUE', 'FALSE', 'MIXED', 'UNCERTAIN', 'RESEARCH_RESPONSE'];
-      if (validVerdicts.includes(vUpper)) {
-        parsed.verdict = vUpper;
-      } else if (vUpper === 'LIVE_WEB_SEARCH' || vUpper === 'EVIDENCE_SNIPPET') {
-        const expLower = (parsed.explanation || '').toLowerCase();
-        if (expLower.includes('disproven') || expLower.includes('false') || expLower.includes('myth') || expLower.includes('incorrect') || expLower.includes('misconception') || expLower.includes('not flat')) {
-          parsed.verdict = 'FALSE';
-        } else if (expLower.includes('supports') || expLower.includes('confirms') || expLower.includes('true') || expLower.includes('proven')) {
-          parsed.verdict = 'TRUE';
-        } else {
-          parsed.verdict = 'UNCERTAIN';
-        }
-      }
-    }
-
-    // Zod Schema Validation
     const validation = validateVerdict(parsed);
     if (!validation.valid) {
       console.warn(`⚠️ Verification Engine: Verdict Zod validation failed: ${validation.errors.join('; ')}`);
@@ -154,7 +123,6 @@ class VerificationEngine {
         mode,
         domain,
         evidenceStrength: evalResult.evidenceStrength,
-        confidence: 'LOW',
         languageMetadata,
         sources: [],
       };
@@ -162,8 +130,9 @@ class VerificationEngine {
 
     const verdictPayload = validation.data;
 
-    // Evidence-ID Allow-List Check
-    if (verdictPayload.evidence && verdictPayload.evidence.length > 0) {
+    // 8. Citation & Evidence Grounding Verification
+    const allowlistedIds = new Set(enhancedMatches.map((m) => m.claimId));
+    if (verdictPayload.evidence && Array.from(verdictPayload.evidence).length > 0) {
       for (const item of verdictPayload.evidence) {
         if (!allowlistedIds.has(item.claimId)) {
           console.warn(`⚠️ Verification Engine: Rejecting un-allowlisted evidence ID reference '${item.claimId}'`);
@@ -173,7 +142,6 @@ class VerificationEngine {
             mode,
             domain,
             evidenceStrength: evalResult.evidenceStrength,
-            confidence: 'LOW',
             languageMetadata,
             sources: [],
           };
@@ -181,68 +149,76 @@ class VerificationEngine {
       }
     }
 
-    // Citation Integrity Validation (Prevents URL Hallucinations)
-    const citationValidation = CitationValidator.validate(verdictPayload.evidence || [], enhancedMatches);
-    if (!citationValidation.valid) {
-      console.warn(`⚠️ Verification Engine: Citation validation failed: ${citationValidation.reason}`);
-      const fallback = createUncertainFallback(FALLBACK_REASONS.INVALID_EVIDENCE_REFERENCE, null, lang);
+    // Strict URL citation validation against retrieved matches
+    const citationCheck = CitationValidator.validate(verdictPayload, enhancedMatches);
+    if (!citationCheck.valid) {
+      console.warn(`⚠️ Verification Engine: Citation validation failed: ${citationCheck.reason}`);
+      const fallback = createUncertainFallback(FALLBACK_REASONS.INVALID_CITATION_URL, null, lang);
       return {
         ...fallback,
         mode,
         domain,
         evidenceStrength: evalResult.evidenceStrength,
-        confidence: 'LOW',
         languageMetadata,
         sources: [],
       };
     }
 
-    // For VERIFICATION mode: Boundedness Check
-    if (mode === 'VERIFICATION' && verdictPayload.verdict !== 'UNCERTAIN' && (!verdictPayload.evidence || verdictPayload.evidence.length === 0)) {
+    // 9. Boundedness Check: Non-UNCERTAIN verification verdict with zero evidence citations -> UNCERTAIN
+    if (verdictPayload.verdict !== 'UNCERTAIN' && verdictPayload.verdict !== 'RESEARCH_RESPONSE' && (!verdictPayload.evidence || verdictPayload.evidence.length === 0)) {
       console.warn('⚠️ Verification Engine: Non-UNCERTAIN verdict has zero evidence citations. Forcing UNCERTAIN fallback.');
       const fallback = createUncertainFallback(FALLBACK_REASONS.INSUFFICIENT_EVIDENCE, null, lang);
       return {
         ...fallback,
-        mode: 'VERIFICATION',
+        mode,
         domain,
-        evidenceStrength: 'NO_EVIDENCE',
-        confidence: 'LOW',
+        evidenceStrength: evalResult.evidenceStrength,
         languageMetadata,
         sources: [],
       };
     }
 
-    // Consolidate sources with authority levels
-    const sources = citationValidation.validatedCitations.map((c) => ({
-      claimId: c.claimId,
-      sourceTitle: c.sourceTitle,
-      organization: c.organization,
-      url: c.url,
-      authorityLevel: c.authorityLevel || 'PRIMARY_AUTHORITY',
-    }));
-
-    // Map numeric confidence to qualitative HIGH / MEDIUM / LOW
-    let honestConfidence = evalResult.confidence;
+    // Convert numeric confidence score to string enum (HIGH, MEDIUM, LOW, NONE)
+    let finalConfidence = 'HIGH';
     if (typeof verdictPayload.confidence === 'number') {
-      if (verdictPayload.confidence >= 0.8) honestConfidence = 'HIGH';
-      else if (verdictPayload.confidence >= 0.5) honestConfidence = 'MEDIUM';
-      else honestConfidence = 'LOW';
+      finalConfidence = verdictPayload.confidence >= 0.8 ? 'HIGH' :
+                        verdictPayload.confidence >= 0.5 ? 'MEDIUM' :
+                        verdictPayload.confidence > 0 ? 'LOW' : 'NONE';
+    } else if (typeof verdictPayload.confidence === 'string') {
+      finalConfidence = verdictPayload.confidence;
     }
+
+    // Bound verdict confidence if search returned only partial results
+    if (options && options.searchStatus === 'SEARCH_PARTIAL' && finalConfidence === 'HIGH') {
+      finalConfidence = 'MEDIUM';
+    }
+
+    // Build verified response sources metadata
+    const verifiedSources = (verdictPayload.evidence || []).map((ev) => {
+      const matchObj = enhancedMatches.find((m) => m.claimId === ev.claimId);
+      const firstSource = matchObj?.sources?.[0] || {};
+      return {
+        claimId: ev.claimId,
+        sourceTitle: ev.sourceTitle || firstSource.title || 'Official Primary Source',
+        organization: ev.organization || firstSource.organization || 'Government/Scientific Authority',
+        url: ev.url || firstSource.url || '',
+        authorityLevel: firstSource.authorityLevel || 'PRIMARY_AUTHORITY',
+      };
+    });
 
     return {
       mode,
       domain,
-      verdict: mode === 'GENERAL_RESEARCH' ? 'RESEARCH_RESPONSE' : verdictPayload.verdict,
-      confidence: honestConfidence,
+      verdict: verdictPayload.verdict,
+      confidence: finalConfidence,
       evidenceStrength: evalResult.evidenceStrength,
       independentSourceCount: evalResult.independentSourceCount,
       explanation: verdictPayload.explanation,
       answer: verdictPayload.explanation,
-      evidence: verdictPayload.evidence,
-      sources,
+      evidence: verdictPayload.evidence || [],
+      sources: verifiedSources,
       languageMetadata,
-      reason: verdictPayload.reason || 'EVIDENCE_GROUNDED',
-      provider: this.provider.name,
+      reason: 'EVIDENCE_GROUNDED',
     };
   }
 }

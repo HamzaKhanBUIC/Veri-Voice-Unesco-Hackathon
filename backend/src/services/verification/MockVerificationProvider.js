@@ -14,7 +14,7 @@ class MockVerificationProvider extends VerificationProvider {
     this.returnFabricatedEvidenceId = options.returnFabricatedEvidenceId || false;
   }
 
-  async verify(userClaim, evidenceMatches) {
+  async verify(userClaim, evidenceMatches, options = {}) {
     if (this.shouldFail) {
       throw new Error(this.failureMessage);
     }
@@ -67,7 +67,7 @@ class MockVerificationProvider extends VerificationProvider {
     const topMatch = evidenceMatches[0];
 
     return JSON.stringify({
-      verdict: topMatch.verdict || 'TRUE',
+      verdict: options.mode === 'GENERAL_RESEARCH' ? 'RESEARCH_RESPONSE' : (topMatch.verdict || 'TRUE'),
       confidence: 0.95,
       explanation: topMatch.explanation || 'طبی تصدیق شدہ معلومات۔',
       evidence: [
