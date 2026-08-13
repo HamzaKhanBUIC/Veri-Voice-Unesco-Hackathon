@@ -110,6 +110,24 @@ class VerificationEngine {
       };
     }
 
+    // Verdict Sanitization & Normalization
+    if (parsed && typeof parsed.verdict === 'string') {
+      const vUpper = parsed.verdict.toUpperCase().trim();
+      const validVerdicts = ['TRUE', 'FALSE', 'MIXED', 'UNCERTAIN', 'RESEARCH_RESPONSE'];
+      if (validVerdicts.includes(vUpper)) {
+        parsed.verdict = vUpper;
+      } else if (vUpper === 'LIVE_WEB_SEARCH' || vUpper === 'EVIDENCE_SNIPPET') {
+        const expLower = (parsed.explanation || '').toLowerCase();
+        if (expLower.includes('disproven') || expLower.includes('false') || expLower.includes('myth') || expLower.includes('incorrect') || expLower.includes('misconception') || expLower.includes('not flat')) {
+          parsed.verdict = 'FALSE';
+        } else if (expLower.includes('supports') || expLower.includes('confirms') || expLower.includes('true') || expLower.includes('proven')) {
+          parsed.verdict = 'TRUE';
+        } else {
+          parsed.verdict = 'UNCERTAIN';
+        }
+      }
+    }
+
     // Zod Schema Validation
     const validation = validateVerdict(parsed);
     if (!validation.valid) {
