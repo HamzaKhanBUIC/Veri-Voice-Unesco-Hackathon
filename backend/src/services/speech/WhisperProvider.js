@@ -36,7 +36,9 @@ class WhisperProvider extends SpeechProvider {
     const formData = new FormData();
     formData.append('file', audioBlob, fileName);
     formData.append('model', this.model);
-    formData.append('language', options.language || 'ur');
+    if (options.language) {
+      formData.append('language', options.language);
+    }
     formData.append('response_format', 'json');
 
     const controller = new AbortController();

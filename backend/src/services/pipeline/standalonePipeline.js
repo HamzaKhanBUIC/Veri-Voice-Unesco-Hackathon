@@ -41,10 +41,30 @@ class StandalonePipeline {
 
     // Step 1: Speech-To-Text Transcription
     const sttStart = Date.now();
-    const sttResult = await this.speechProvider.transcribe(validation.details.path, { language: 'auto' });
+    let sttResult = null;
+
+    try {
+      if (this.speechProvider) {
+        sttResult = await this.speechProvider.transcribe(validation.details.path, { language: 'auto' });
+      }
+    } catch (err) {
+      console.warn(`⚠️ Primary STT provider failed: ${err.message}. Switching to Whisper ASR...`);
+    }
+
+    // Fallback to Groq Whisper if primary STT failed or returned empty text
+    if (!sttResult || !sttResult.text || sttResult.text.trim() === '') {
+      try {
+        const WhisperProvider = require('../speech/WhisperProvider');
+        const whisper = new WhisperProvider();
+        sttResult = await whisper.transcribe(validation.details.path, { language: null });
+      } catch (whisperErr) {
+        console.warn(`⚠️ Whisper STT fallback failed: ${whisperErr.message}`);
+      }
+    }
+
     const sttMs = Date.now() - sttStart;
 
-    if (!sttResult || typeof sttResult.text !== 'string') {
+    if (!sttResult || typeof sttResult.text !== 'string' || sttResult.text.trim() === '') {
       throw new Error('Pipeline error: STT provider returned invalid result structure.');
     }
 

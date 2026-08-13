@@ -28,7 +28,7 @@ class SpeechmaticsProvider extends SpeechProvider {
     const fileName = path.basename(audioPath);
     const audioBlob = new Blob([audioBuffer], { type: options.mimeType || 'audio/ogg' });
 
-    const targetLang = (options.language && options.language !== 'auto') ? options.language : 'ur';
+    const targetLang = (options.language && options.language !== 'auto') ? options.language : 'en';
 
     const jobConfig = {
       type: 'transcription',
