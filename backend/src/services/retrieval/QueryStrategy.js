@@ -14,12 +14,12 @@ const MULTILINGUAL_TERMS_MAP = [
   { pattern: /سورج|sun/i, english: 'sun solar system' },
 
   // Spanish
-  { pattern: /dengue/i, english: 'dengue fever vaccine safety' },
+  { pattern: /dengue/i, english: 'dengue fever mosquito virus' },
   { pattern: /vacuna/i, english: 'vaccine safety monitoring' },
   { pattern: /segura|seguridad/i, english: 'safety evidence' },
 
   // Indonesian
-  { pattern: /demam berdarah/i, english: 'dengue fever vaccine safety' },
+  { pattern: /demam berdarah/i, english: 'dengue fever mosquito virus' },
   { pattern: /vaksin/i, english: 'vaccine safety' },
   { pattern: /aman|keamanan/i, english: 'safety evidence' },
 ];

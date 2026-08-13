@@ -6,8 +6,8 @@ const HINDI_DEVANA_REGEX = /[\u0900-\u097F]/;
 const BENGALI_REGEX = /[\u0980-\u09FF]/;
 
 // Keyword dictionaries for Latin-script languages
-const SPANISH_INDICATORS = new Set(['que', 'el', 'la', 'los', 'las', 'un', 'una', 'es', 'son', 'por', 'para', 'con', 'vacuna', 'salud', 'inundacion', 'terremoto', 'noticia']);
-const INDONESIAN_INDICATORS = new Set(['yang', 'di', 'dan', 'ini', 'itu', 'dengan', 'untuk', 'pada', 'adalah', 'banjir', 'tsunami', 'gempa', 'kesehatan', 'vaksin']);
+const SPANISH_INDICATORS = new Set(['que', 'el', 'la', 'los', 'las', 'un', 'una', 'es', 'son', 'por', 'para', 'con', 'vacuna', 'salud', 'inundacion', 'terremoto', 'noticia', 'dengue', 'causa', 'como', 'cual', 'donde']);
+const INDONESIAN_INDICATORS = new Set(['yang', 'di', 'dan', 'ini', 'itu', 'dengan', 'untuk', 'pada', 'adalah', 'banjir', 'tsunami', 'gempa', 'kesehatan', 'vaksin', 'demam', 'berdarah']);
 const ROMAN_URDU_INDICATORS = new Set(['kya', 'hai', 'hain', 'mein', 'par', 'ko', 'se', 'ya', 'nahi', 'raha', 'rahi', 'syed', 'saal', 'paani', 'seelao', 'subah', 'ka']);
 const FRENCH_INDICATORS = new Set(['est', 'les', 'des', 'une', 'dans', 'pour', 'pas', 'sur', 'plus', 'par']);
 const GERMAN_INDICATORS = new Set(['ist', 'das', 'die', 'der', 'und', 'in', 'zu', 'den', 'mit', 'nicht']);
@@ -39,7 +39,6 @@ class LanguageDetector {
 
     // 1. Script-based detection
     if (URDU_ARABIC_REGEX.test(text)) {
-      // Check for Urdu specific characters
       if (/[\u067E\u0686\u0698\u06AF\u06BA\u06D2]/.test(text) || text.includes('ہے') || text.includes('کا') || text.includes('کی') || text.includes('کے')) {
         detectedLanguage = 'ur';
       } else {
@@ -50,11 +49,18 @@ class LanguageDetector {
     } else if (BENGALI_REGEX.test(text)) {
       detectedLanguage = 'bn';
     } else {
-      // 2. Token-based detection for Latin scripts
-      const tokens = text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+      // 2. Token-based detection for Latin scripts with accent normalization
+      const normalizedTokens = text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(Boolean);
+
       let esScore = 0, idScore = 0, romanUrScore = 0, frScore = 0, deScore = 0, ptScore = 0;
 
-      for (const token of tokens) {
+      for (const token of normalizedTokens) {
         if (SPANISH_INDICATORS.has(token)) esScore++;
         if (INDONESIAN_INDICATORS.has(token)) idScore++;
         if (ROMAN_URDU_INDICATORS.has(token)) romanUrScore++;
