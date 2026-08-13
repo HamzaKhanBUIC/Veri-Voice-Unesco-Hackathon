@@ -59,6 +59,15 @@ class DiscordService {
       const userId = message.author?.id || 'unknown_user';
       const requestId = `req_msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+      // Global System Rate Limit Check (20 req / 60s)
+      const globalCheck = this.rateLimiter.checkGlobal();
+      if (!globalCheck.allowed) {
+        try {
+          await message.reply('⚠️ System busy under high traffic (Global rate limit reached). Please try again in a moment.');
+        } catch (e) {}
+        return;
+      }
+
       // Rate limit check per user ID
       const rateCheck = this.rateLimiter.check(userId);
       if (!rateCheck.allowed) {
@@ -117,6 +126,14 @@ class DiscordService {
 
       const userId = interaction.user?.id || 'unknown_user';
       const requestId = `req_slash_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+      const globalCheck = this.rateLimiter.checkGlobal();
+      if (!globalCheck.allowed) {
+        try {
+          await interaction.reply({ content: '⚠️ System busy under high traffic (Global rate limit reached). Please try again in a moment.', ephemeral: true });
+        } catch (e) {}
+        return;
+      }
 
       const rateCheck = this.rateLimiter.check(userId);
       if (!rateCheck.allowed) {

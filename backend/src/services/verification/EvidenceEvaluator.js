@@ -3,7 +3,7 @@
  * Evaluates retrieved evidence metadata independent of LLM reasoning.
  * Assesses evidenceStrength (STRONG_EVIDENCE, SUFFICIENT_EVIDENCE, WEAK_EVIDENCE, NO_EVIDENCE, CONFLICTING_EVIDENCE),
  * independentSourceCount, and qualitative confidence (HIGH, MEDIUM, LOW).
- * Deduplicates syndicated news wire copy across multiple domains to enforce true source independence.
+ * Enforces strict confidence capping when search execution is SEARCH_PARTIAL.
  */
 
 const EVIDENCE_STRENGTH = {
@@ -59,9 +59,10 @@ class EvidenceEvaluator {
   /**
    * Evaluates retrieved evidence matches.
    * @param {Array<object>} matches 
+   * @param {object} [options] - Options including searchStatus
    * @returns {{ evidenceStrength: string, confidence: string, independentSourceCount: number, primarySourceCount: number }}
    */
-  static evaluate(matches = []) {
+  static evaluate(matches = [], options = {}) {
     if (!Array.isArray(matches) || matches.length === 0) {
       return {
         evidenceStrength: EVIDENCE_STRENGTH.NO_EVIDENCE,
@@ -108,6 +109,16 @@ class EvidenceEvaluator {
     } else if (deduplicated.length > 0) {
       evidenceStrength = EVIDENCE_STRENGTH.WEAK_EVIDENCE;
       confidence = 'LOW';
+    }
+
+    // Strict Rule for SEARCH_PARTIAL: Partial search results CANNOT produce a HIGH confidence verdict automatically
+    if (options.searchStatus === 'SEARCH_PARTIAL') {
+      if (confidence === 'HIGH') {
+        confidence = 'MEDIUM';
+      }
+      if (evidenceStrength === EVIDENCE_STRENGTH.STRONG_EVIDENCE) {
+        evidenceStrength = EVIDENCE_STRENGTH.SUFFICIENT_EVIDENCE;
+      }
     }
 
     return {

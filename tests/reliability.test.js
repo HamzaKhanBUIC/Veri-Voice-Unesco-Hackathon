@@ -2,13 +2,11 @@ const RateLimiter = require('../backend/src/services/rateLimiter/RateLimiter');
 const ConcurrencyLimiter = require('../backend/src/services/concurrency/ConcurrencyLimiter');
 const { EvidenceEvaluator } = require('../backend/src/services/verification/EvidenceEvaluator');
 const VerificationEngine = require('../backend/src/services/verification/verificationEngine');
-const RetrievalService = require('../backend/src/services/retrieval/retrievalService');
 const StandalonePipeline = require('../backend/src/services/pipeline/standalonePipeline');
-const DiscordService = require('../backend/src/services/discord/DiscordService');
 
 describe('VeriVoice Reliability Controls & Stress Resilience Suite', () => {
-  describe('CR-2: RateLimiter Sliding-Window Protection', () => {
-    it('should allow up to maxRequests within window and block excessive spam', () => {
+  describe('CR-2: RateLimiter Per-User & Global Protection', () => {
+    it('should allow up to maxRequests per user and block excessive spam', () => {
       const limiter = new RateLimiter({ maxRequests: 3, windowMs: 1000 });
       const userId = 'spam_user_123';
 
@@ -16,11 +14,22 @@ describe('VeriVoice Reliability Controls & Stress Resilience Suite', () => {
       expect(limiter.check(userId).allowed).toBe(true);
       expect(limiter.check(userId).allowed).toBe(true);
 
-      // 4th request must be blocked
       const blocked = limiter.check(userId);
       expect(blocked.allowed).toBe(false);
       expect(blocked.remaining).toBe(0);
       expect(blocked.resetMs).toBeGreaterThan(0);
+    });
+
+    it('should enforce GLOBAL_REQUEST_LIMIT (20 req / 60s) across all users', () => {
+      const limiter = new RateLimiter({ globalMaxRequests: 3, globalWindowMs: 1000 });
+
+      expect(limiter.checkGlobal().allowed).toBe(true);
+      expect(limiter.checkGlobal().allowed).toBe(true);
+      expect(limiter.checkGlobal().allowed).toBe(true);
+
+      const globalBlocked = limiter.checkGlobal();
+      expect(globalBlocked.allowed).toBe(false);
+      expect(globalBlocked.resetMs).toBeGreaterThan(0);
     });
   });
 
@@ -40,7 +49,6 @@ describe('VeriVoice Reliability Controls & Stress Resilience Suite', () => {
         });
       };
 
-      // Launch 5 tasks concurrently
       const results = await Promise.all([
         mockTask(),
         mockTask(),
@@ -54,7 +62,7 @@ describe('VeriVoice Reliability Controls & Stress Resilience Suite', () => {
     });
   });
 
-  describe('CR-1: Search Infrastructure Failure Distinction', () => {
+  describe('CR-1 & SEARCH_PARTIAL Confidence Bounding', () => {
     it('should return SEARCH_INFRASTRUCTURE_FAILURE when searchStatus is SEARCH_TIMEOUT', async () => {
       const engine = new VerificationEngine();
       const result = await engine.verifyClaim('Is Earth flat.', [], {
@@ -65,6 +73,33 @@ describe('VeriVoice Reliability Controls & Stress Resilience Suite', () => {
       expect(result.reason).toBe('SEARCH_INFRASTRUCTURE_FAILURE');
       expect(result.evidenceStrength).toBe('INFRASTRUCTURE_FAILURE');
       expect(result.explanation).toContain('temporary network timeout');
+    });
+
+    it('should cap confidence to MEDIUM when searchStatus is SEARCH_PARTIAL', () => {
+      const matches = [
+        {
+          claimId: 'W1',
+          claim: 'Test claim',
+          explanation: 'Explanation snippet',
+          authorityLevel: 'PRIMARY_AUTHORITY',
+          url: 'https://nasa.gov/1',
+          sources: [{ domain: 'nasa.gov', authorityLevel: 'PRIMARY_AUTHORITY' }],
+        },
+        {
+          claimId: 'W2',
+          claim: 'Test claim 2',
+          explanation: 'Explanation snippet 2',
+          authorityLevel: 'PRIMARY_AUTHORITY',
+          url: 'https://nasa.gov/2',
+          sources: [{ domain: 'nasa.gov', authorityLevel: 'PRIMARY_AUTHORITY' }],
+        },
+      ];
+
+      const evalFull = EvidenceEvaluator.evaluate(matches, { searchStatus: 'SEARCH_SUCCESS' });
+      expect(evalFull.confidence).toBe('HIGH');
+
+      const evalPartial = EvidenceEvaluator.evaluate(matches, { searchStatus: 'SEARCH_PARTIAL' });
+      expect(evalPartial.confidence).toBe('MEDIUM');
     });
   });
 
