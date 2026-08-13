@@ -3,49 +3,28 @@ const DiscordMedia = require('./DiscordMedia');
 const DiscordCommands = require('./DiscordCommands');
 const StandalonePipeline = require('../pipeline/standalonePipeline');
 const SpeechmaticsProvider = require('../speech/SpeechmaticsProvider');
-const WhisperProvider = require('../speech/WhisperProvider');
-const MockSpeechProvider = require('../speech/MockSpeechProvider');
 const EdgeTTSProvider = require('../tts/EdgeTTSProvider');
-const MockTTSProvider = require('../tts/MockTTSProvider');
 const VerificationEngine = require('../verification/verificationEngine');
-const GroqVerificationProvider = require('../verification/GroqVerificationProvider');
-const MockVerificationProvider = require('../verification/MockVerificationProvider');
 const RetrievalService = require('../retrieval/retrievalService');
+const LanguageDetector = require('../language/LanguageDetector');
 
 /**
- * Discord Interface Adapter Service.
- * Serves as an isolated interface wrapper around the standalone core verification pipeline.
- * Contains ZERO verification/LLM/STT logic internally.
+ * Discord Adapter Service.
+ * Manages full lifecycle of Discord Bot: Gateway listeners, Slash commands,
+ * Text mentions (@VeriVoice), Voice Note attachments, and Audio Pipeline delegation.
  */
 class DiscordService {
   constructor(options = {}) {
-    this.clientWrapper = options.clientWrapper || new DiscordClient(options);
-    
-    // Select speech provider based on env configuration
-    let defaultSpeechProvider;
-    if (process.env.SPEECH_PROVIDER === 'speechmatics' && process.env.SPEECHMATICS_API_KEY) {
-      defaultSpeechProvider = new SpeechmaticsProvider();
-    } else if (process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY) {
-      defaultSpeechProvider = new WhisperProvider();
-    } else {
-      defaultSpeechProvider = new MockSpeechProvider();
-    }
+    this.clientWrapper = options.clientWrapper || new DiscordClient();
 
-    // Select LLM verification provider based on env configuration
-    let defaultLlmProvider;
-    if (process.env.GROQ_API_KEY) {
-      defaultLlmProvider = new GroqVerificationProvider();
-    } else {
-      defaultLlmProvider = new MockVerificationProvider();
-    }
+    // Default to real production-grade providers
+    const defaultSpeechProvider = process.env.SPEECHMATICS_API_KEY
+      ? new SpeechmaticsProvider()
+      : null;
+    const defaultTtsProvider = new EdgeTTSProvider();
+    const defaultRetrieval = new RetrievalService();
+    const defaultVerificationEngine = new VerificationEngine();
 
-    const defaultRetrieval = options.retrievalService || new RetrievalService();
-    const defaultVerificationEngine = new VerificationEngine({ provider: defaultLlmProvider });
-
-    // Select TTS provider
-    const defaultTtsProvider = process.env.TTS_PROVIDER === 'mock' ? new MockTTSProvider() : new EdgeTTSProvider();
-
-    // Core Standalone Pipeline instance
     this.pipeline = options.pipeline || new StandalonePipeline({
       speechProvider: options.speechProvider || defaultSpeechProvider,
       verificationEngine: options.verificationEngine || defaultVerificationEngine,
@@ -70,20 +49,52 @@ class DiscordService {
       await this.clientWrapper.registerSlashCommands(DiscordCommands.getSlashCommands());
     });
 
-    // Handle Incoming Messages (Voice note attachments & Onboarding)
+    // Handle Incoming Messages (Voice note attachments, Mentions & Text queries)
     client.on('messageCreate', async (message) => {
       // Ignore bot's own messages
       if (message.author.bot) return;
 
-      // Handle audio attachments
+      // 1. Handle audio attachments
       if (message.attachments.size > 0) {
         for (const [, attachment] of message.attachments) {
           await this.handleAudioAttachment(message, attachment);
         }
-      } else if (message.content && (message.content.startsWith('!verify') || message.content.startsWith('!help'))) {
-        // Send onboarding help
-        const helpPayload = await DiscordCommands.handleInteraction({ commandName: 'help' }, this.pipeline);
-        await message.reply(helpPayload.content);
+        return;
+      }
+
+      // 2. Handle Bot Mentions (@VeriVoice <query>) or !verify / !help
+      const botMentioned = client.user && message.mentions.has(client.user);
+      const isLegacyCmd = message.content && (message.content.startsWith('!verify') || message.content.startsWith('!help'));
+
+      if (botMentioned || isLegacyCmd) {
+        let queryText = message.content;
+        if (botMentioned) {
+          // Strip bot mention tag from message content
+          queryText = queryText.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
+        } else if (message.content.startsWith('!verify')) {
+          queryText = queryText.replace('!verify', '').trim();
+        }
+
+        if (!queryText || isLegacyCmd && message.content.startsWith('!help')) {
+          const helpPayload = await DiscordCommands.handleInteraction({ commandName: 'help' }, this.pipeline);
+          await message.reply(helpPayload.content);
+          return;
+        }
+
+        // Process text claim/question directly
+        try {
+          const mockInteraction = {
+            commandName: 'verify',
+            options: {
+              getString: (key) => (key === 'claim' ? queryText : null),
+            },
+          };
+          const responsePayload = await DiscordCommands.handleInteraction(mockInteraction, this.pipeline);
+          await message.reply(responsePayload.content);
+        } catch (err) {
+          console.error(`❌ DiscordService mention handler error: ${err.message}`);
+          await message.reply('⚠️ Verification error: Unable to process request. Please try again using `/verify <claim>`.');
+        }
       }
     });
 
@@ -98,7 +109,7 @@ class DiscordService {
       } catch (err) {
         console.error(`❌ DiscordService command error: ${err.message}`);
         if (interaction.deferred || interaction.replied) {
-          await interaction.editReply('⚠️ اس کمانڈ کی تعمیل کے دوران خرابی پیش آئی۔');
+          await interaction.editReply('⚠️ An error occurred while executing this command. Please try again.');
         }
       }
     });
@@ -127,9 +138,9 @@ class DiscordService {
     let progressMsg = null;
 
     try {
-      // 1. Send progress acknowledgment
+      // 1. Send initial progress acknowledgment
       try {
-        progressMsg = await message.reply('آپ کا وائس نوٹ موصول ہوگیا ہے۔\nتصدیق جاری ہے، براہِ کرم انتظار فرمائیں۔ ⏳');
+        progressMsg = await message.reply('🎙️ **Voice note received.** VeriVoice is transcribing and verifying your audio, please wait... ⏳');
       } catch (e) {
         // Ignore reply error
       }
@@ -146,19 +157,30 @@ class DiscordService {
       console.log(`⚡ DiscordService: Delegating to StandalonePipeline (${tempInputPath})...`);
       const pipelineResult = await this.pipeline.processAudio(tempInputPath);
 
-      // 5. Build structured response message
+      // 5. Detect language to format response card consistently
+      const lang = pipelineResult.language || 'ur';
+      const isUrdu = lang === 'ur' || lang === 'ur-Roman';
+
       const verdictBadge = pipelineResult.verdict === 'TRUE' ? '🟢 TRUE' :
                           pipelineResult.verdict === 'FALSE' ? '🔴 FALSE' :
-                          pipelineResult.verdict === 'MIXED' ? '🟡 MIXED' : '⚪ UNCERTAIN (Insufficient Evidence)';
+                          pipelineResult.verdict === 'MIXED' ? '🟡 MIXED' :
+                          pipelineResult.verdict === 'RESEARCH_RESPONSE' ? '🔬 RESEARCH RESPONSE' :
+                          '⚪ UNCERTAIN (Insufficient Evidence)';
+
+      const headerTitle = isUrdu ? '🎙️ VERIVOICE وائس واک تصدیق' : '🎙️ VERIVOICE VOICE VERIFICATION';
+      const transcriptLabel = isUrdu ? 'متن (Transcript)' : 'Transcript';
+      const verdictLabel = isUrdu ? 'نتیجہ (Verdict)' : 'Verdict';
+      const explanationLabel = isUrdu ? 'تفصیل (Explanation)' : 'Explanation';
+      const audioLabel = isUrdu ? '🔊 صوتی جواب (Audio Response)' : '🔊 Spoken Audio Response';
 
       const replyText = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                        `🎙️ **VERIVOICE VOICE VERIFICATION**\n` +
+                        `**${headerTitle}**\n` +
                         `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                        `**Transcript**: "${pipelineResult.transcript}"\n` +
-                        `**Verdict**: ${verdictBadge}\n` +
+                        `**${transcriptLabel}**: "${pipelineResult.transcript}"\n` +
+                        `**${verdictLabel}**: ${verdictBadge}\n` +
                         `**Processing Time**: \`${pipelineResult.timing?.totalSeconds || 0.0}s\`\n\n` +
-                        `**Explanation**: ${pipelineResult.responseText}\n\n` +
-                        `🔊 **Spoken Audio Response**:`;
+                        `**${explanationLabel}**: ${pipelineResult.responseText}\n\n` +
+                        `**${audioLabel}**:`;
 
       // 6. Send result + generated MP3 audio file attachment
       await message.channel.send({
@@ -176,7 +198,7 @@ class DiscordService {
     } catch (err) {
       console.error(`❌ DiscordService pipeline processing error: ${err.message}`);
       try {
-        await message.reply('اس دعوے کے بارے میں فی الحال حتمی فیصلہ ممکن نہیں ہے۔ (UNCERTAIN) ⚠️');
+        await message.reply('⚠️ Unable to determine a conclusive verification verdict for this voice note. (UNCERTAIN)');
       } catch (e) {
         // Ignore reply error
       }
