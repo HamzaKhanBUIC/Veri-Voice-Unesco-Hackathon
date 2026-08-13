@@ -47,9 +47,10 @@ Sources: ${(e.sources || []).map((s) => `${s.organization} (${s.title}: ${s.url}
 
     const isResearch = options.mode === 'GENERAL_RESEARCH';
     const lang = options.targetLanguage || 'ur';
-    const langInstruction = lang === 'ur' ? 'in simple, natural Urdu' :
+    const langInstruction = lang === 'ur' ? 'in simple, natural Urdu script' :
+                          lang === 'ur-Roman' ? 'in Roman Urdu (Urdu written in English script)' :
                           lang === 'es' ? 'in simple Spanish' :
-                          lang === 'id' ? 'in simple Indonesian' : 'in clear, direct English';
+                          lang === 'id' ? 'in clear Indonesian (Bahasa Indonesia)' : 'in clear, direct English';
 
     const systemInstruction = isResearch ? `You are an evidence-grounded research assistant.
 Your task is to answer the user's research question inside <USER_QUESTION> tags based ONLY on the evidence inside <EVIDENCE> tags.

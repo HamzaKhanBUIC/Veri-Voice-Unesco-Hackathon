@@ -17,11 +17,16 @@ const MULTILINGUAL_TERMS_MAP = [
   { pattern: /dengue/i, english: 'dengue fever mosquito virus' },
   { pattern: /vacuna/i, english: 'vaccine safety monitoring' },
   { pattern: /segura|seguridad/i, english: 'safety evidence' },
+  { pattern: /tierra|plana/i, english: 'flat earth' },
+  { pattern: /sol/i, english: 'sun solar system' },
 
   // Indonesian
-  { pattern: /demam berdarah/i, english: 'dengue fever mosquito virus' },
+  { pattern: /demam berdarah|dengue/i, english: 'dengue fever mosquito virus' },
   { pattern: /vaksin/i, english: 'vaccine safety' },
   { pattern: /aman|keamanan/i, english: 'safety evidence' },
+  { pattern: /bumi|datar/i, english: 'flat earth' },
+  { pattern: /matahari/i, english: 'sun solar system' },
+  { pattern: /air|mendidih/i, english: 'water boiling point' },
 ];
 
 class QueryStrategy {
