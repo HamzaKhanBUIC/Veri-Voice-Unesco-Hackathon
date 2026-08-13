@@ -115,6 +115,13 @@ class DiscordMedia {
           return reject(new Error(`DiscordMedia download failed with HTTP ${response.statusCode}`));
         }
 
+        response.setTimeout(15000, () => {
+          request.destroy();
+          fileStream.close();
+          if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+          reject(new Error('DiscordMedia: Streaming response timed out (15s)'));
+        });
+
         response.pipe(fileStream);
 
         fileStream.on('finish', () => {

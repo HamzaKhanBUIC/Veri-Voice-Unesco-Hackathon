@@ -26,8 +26,9 @@ class StandalonePipeline {
    * @param {string} [outputAudioPath] - Optional custom path for output audio file
    * @returns {Promise<object>} Pipeline execution result and performance report
    */
-  async processAudio(inputAudioPath, outputAudioPath) {
+  async processAudio(inputAudioPath, outputAudioPath, options = {}) {
     const startTime = Date.now();
+    const requestId = options.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
     // Step 0: Validate input audio file
     const validation = validateAudioFile(inputAudioPath);
@@ -48,7 +49,7 @@ class StandalonePipeline {
         sttResult = await this.speechProvider.transcribe(validation.details.path, { language: 'auto' });
       }
     } catch (err) {
-      console.warn(`⚠️ Primary STT provider failed: ${err.message}. Switching to Whisper ASR...`);
+      console.warn(`⚠️ [${requestId}] Primary STT provider failed: ${err.message}. Switching to Whisper ASR...`);
     }
 
     // Fallback to Groq Whisper if primary STT failed or returned empty text
@@ -58,7 +59,7 @@ class StandalonePipeline {
         const whisper = new WhisperProvider();
         sttResult = await whisper.transcribe(validation.details.path, { language: null });
       } catch (whisperErr) {
-        console.warn(`⚠️ Whisper STT fallback failed: ${whisperErr.message}`);
+        console.warn(`⚠️ [${requestId}] Whisper STT fallback failed: ${whisperErr.message}`);
       }
     }
 
@@ -82,11 +83,16 @@ class StandalonePipeline {
       isStub = verifResult.isStub || false;
     } else {
       let matches = [];
+      let searchStatus = 'SEARCH_SUCCESS';
       if (this.retrievalService) {
-        const retResult = await this.retrievalService.search(sttResult.text);
+        const retResult = await this.retrievalService.search(sttResult.text, options);
         matches = retResult.matches || [];
+        searchStatus = retResult.searchStatus || 'SEARCH_SUCCESS';
       }
-      const verifPayload = await this.verificationEngine.verifyClaim(sttResult.text, matches);
+      const verifPayload = await this.verificationEngine.verifyClaim(sttResult.text, matches, {
+        ...options,
+        searchStatus,
+      });
       responseText = verifPayload.explanation;
       verdict = verifPayload.verdict;
       confidence = verifPayload.confidence;
@@ -105,6 +111,7 @@ class StandalonePipeline {
 
     return {
       success: true,
+      requestId,
       inputAudio: validation.details.path,
       outputAudio: ttsResult.outputPath,
       audioPath: ttsResult.outputPath,

@@ -43,6 +43,22 @@ class VerificationEngine {
     // 4. Evidence Evaluation (Evidence Strength & Source Independence)
     const evalResult = EvidenceEvaluator.evaluate(enhancedMatches);
 
+    // Check if evidence retrieval failed due to infrastructure search timeout or failure
+    if (options && (options.searchStatus === 'SEARCH_TIMEOUT' || options.searchStatus === 'SEARCH_FAILED')) {
+      return {
+        verdict: 'UNCERTAIN',
+        confidence: 'LOW',
+        explanation: 'Verification search service experienced a temporary network timeout while fetching live web evidence. Please retry your request.',
+        evidence: [],
+        reason: 'SEARCH_INFRASTRUCTURE_FAILURE',
+        mode,
+        domain,
+        evidenceStrength: 'INFRASTRUCTURE_FAILURE',
+        languageMetadata,
+        sources: [],
+      };
+    }
+
     // Deterministic Fallback if no evidence matches
     if (!enhancedMatches || enhancedMatches.length === 0) {
       if (mode === 'GENERAL_RESEARCH') {

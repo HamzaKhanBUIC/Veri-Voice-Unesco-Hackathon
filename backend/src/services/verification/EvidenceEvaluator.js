@@ -3,6 +3,7 @@
  * Evaluates retrieved evidence metadata independent of LLM reasoning.
  * Assesses evidenceStrength (STRONG_EVIDENCE, SUFFICIENT_EVIDENCE, WEAK_EVIDENCE, NO_EVIDENCE, CONFLICTING_EVIDENCE),
  * independentSourceCount, and qualitative confidence (HIGH, MEDIUM, LOW).
+ * Deduplicates syndicated news wire copy across multiple domains to enforce true source independence.
  */
 
 const EVIDENCE_STRENGTH = {
@@ -14,6 +15,47 @@ const EVIDENCE_STRENGTH = {
 };
 
 class EvidenceEvaluator {
+  /**
+   * Deduplicates syndicated news wire copy or identical text content across domains.
+   * @param {Array<object>} matches 
+   * @returns {Array<object>} Deduplicated matches array
+   */
+  static deduplicateMatches(matches = []) {
+    if (!Array.isArray(matches) || matches.length === 0) return [];
+    const uniqueMatches = [];
+    const seenTexts = [];
+
+    for (const m of matches) {
+      const text = (m.explanation || m.claim || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+      if (!text || text.length < 15) {
+        uniqueMatches.push(m);
+        continue;
+      }
+
+      let isDuplicate = false;
+      const tokensA = new Set(text.split(/\s+/).filter((t) => t.length > 3));
+
+      for (const seen of seenTexts) {
+        const tokensB = new Set(seen.split(/\s+/).filter((t) => t.length > 3));
+        const intersection = new Set([...tokensA].filter((x) => tokensB.has(x)));
+        const union = new Set([...tokensA, ...tokensB]);
+        const similarity = union.size > 0 ? intersection.size / union.size : 0;
+
+        if (similarity > 0.70) {
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      if (!isDuplicate) {
+        seenTexts.push(text);
+        uniqueMatches.push(m);
+      }
+    }
+
+    return uniqueMatches;
+  }
+
   /**
    * Evaluates retrieved evidence matches.
    * @param {Array<object>} matches 
@@ -29,11 +71,13 @@ class EvidenceEvaluator {
       };
     }
 
+    const deduplicated = EvidenceEvaluator.deduplicateMatches(matches);
+
     const uniqueDomains = new Set();
     let primarySourceCount = 0;
     let secondarySourceCount = 0;
 
-    for (const m of matches) {
+    for (const m of deduplicated) {
       if (m.sources && Array.isArray(m.sources)) {
         for (const s of m.sources) {
           if (s.domain) uniqueDomains.add(s.domain);
@@ -50,7 +94,7 @@ class EvidenceEvaluator {
       if (m.authorityLevel === 'PRIMARY_AUTHORITY') primarySourceCount++;
     }
 
-    const independentSourceCount = Math.max(matches.length, uniqueDomains.size);
+    const independentSourceCount = Math.max(deduplicated.length, uniqueDomains.size);
 
     let evidenceStrength = EVIDENCE_STRENGTH.WEAK_EVIDENCE;
     let confidence = 'LOW';
@@ -61,7 +105,7 @@ class EvidenceEvaluator {
     } else if (primarySourceCount >= 1 || independentSourceCount >= 2 || secondarySourceCount >= 2) {
       evidenceStrength = EVIDENCE_STRENGTH.SUFFICIENT_EVIDENCE;
       confidence = 'MEDIUM';
-    } else if (matches.length > 0) {
+    } else if (deduplicated.length > 0) {
       evidenceStrength = EVIDENCE_STRENGTH.WEAK_EVIDENCE;
       confidence = 'LOW';
     }

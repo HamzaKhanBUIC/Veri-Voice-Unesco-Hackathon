@@ -5,6 +5,7 @@ const { normalizeText, extractKeywords } = require('../../utils/textUtils');
 const WebSearchProvider = require('./WebSearchProvider');
 const ChromeSearchProvider = require('./ChromeSearchProvider');
 const QueryStrategy = require('./QueryStrategy');
+const { EvidenceEvaluator } = require('../verification/EvidenceEvaluator');
 
 const DEFAULT_PRODUCTION_DATASET_PATH = path.join(process.cwd(), 'knowledge', 'claims.json');
 
@@ -68,7 +69,7 @@ class RetrievalService {
    * Searches the dataset AND live Google/web search for candidate matches.
    * @param {string} queryText - User's transcript query string
    * @param {object} [searchOptions] - Override maxResults, mode, or domain
-   * @returns {Promise<{ query: string, matches: array, hasEvidence: boolean, datasetSize: number, isLiveNewsSearch: boolean }>}
+   * @returns {Promise<{ query: string, matches: array, hasEvidence: boolean, datasetSize: number, isLiveNewsSearch: boolean, searchStatus: string }>}
    */
   async search(queryText, searchOptions = {}) {
     if (!queryText || typeof queryText !== 'string' || queryText.trim() === '') {
@@ -77,6 +78,7 @@ class RetrievalService {
         matches: [],
         hasEvidence: false,
         datasetSize: 0,
+        searchStatus: 'SEARCH_EMPTY',
       };
     }
 
@@ -152,6 +154,7 @@ class RetrievalService {
 
     let matches = scoredCandidates.slice(0, limit);
     let isLiveNewsSearch = false;
+    let searchStatus = matches.length > 0 ? 'SEARCH_SUCCESS' : 'SEARCH_EMPTY';
 
     // Fallback to Google Chrome Live Web Search if offline dataset yields no match
     if (matches.length === 0 && this.enableLiveSearch) {
@@ -159,31 +162,53 @@ class RetrievalService {
       console.log(`🌐 RetrievalService: Querying Live Search with strategy: [${targetedQueries.join(' | ')}]...`);
 
       const liveResultsMap = new Map();
+      let searchErrorEncountered = false;
+      let isTimeout = false;
 
       for (const q of targetedQueries) {
-        const liveResults = await this.chromeSearchProvider.searchGoogleWeb(q);
-        if (liveResults && liveResults.length > 0) {
-          for (const res of liveResults) {
-            if (!liveResultsMap.has(res.explanation)) {
-              liveResultsMap.set(res.explanation, res);
+        try {
+          const liveResults = await this.chromeSearchProvider.searchGoogleWeb(q);
+          if (liveResults && liveResults.length > 0) {
+            for (const res of liveResults) {
+              if (!liveResultsMap.has(res.explanation)) {
+                liveResultsMap.set(res.explanation, res);
+              }
             }
           }
-        }
-      }
-
-      if (liveResultsMap.size === 0) {
-        const fallbackResults = await this.webSearchProvider.searchLiveNews(queryText);
-        if (fallbackResults && fallbackResults.length > 0) {
-          for (const res of fallbackResults) {
-            liveResultsMap.set(res.explanation || res.claim, res);
+        } catch (err) {
+          searchErrorEncountered = true;
+          if (err.message && err.message.includes('timed out')) {
+            isTimeout = true;
           }
         }
       }
 
-      const combinedLiveMatches = Array.from(liveResultsMap.values());
+      if (liveResultsMap.size === 0 && !searchErrorEncountered) {
+        try {
+          const fallbackResults = await this.webSearchProvider.searchLiveNews(queryText);
+          if (fallbackResults && fallbackResults.length > 0) {
+            for (const res of fallbackResults) {
+              liveResultsMap.set(res.explanation || res.claim, res);
+            }
+          }
+        } catch (err) {
+          searchErrorEncountered = true;
+        }
+      }
+
+      const rawLiveMatches = Array.from(liveResultsMap.values());
+
+      // Deduplicate syndicated wire copy
+      const combinedLiveMatches = EvidenceEvaluator.deduplicateMatches(rawLiveMatches);
+
       if (combinedLiveMatches.length > 0) {
         matches = combinedLiveMatches.slice(0, limit);
         isLiveNewsSearch = true;
+        searchStatus = 'SEARCH_SUCCESS';
+      } else if (searchErrorEncountered) {
+        searchStatus = isTimeout ? 'SEARCH_TIMEOUT' : 'SEARCH_FAILED';
+      } else {
+        searchStatus = 'SEARCH_EMPTY';
       }
     }
 
@@ -193,6 +218,7 @@ class RetrievalService {
       hasEvidence: matches.length > 0,
       datasetSize: dataset.length,
       isLiveNewsSearch,
+      searchStatus,
     };
   }
 }
