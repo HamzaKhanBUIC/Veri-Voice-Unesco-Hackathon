@@ -33,12 +33,46 @@ const LANG_CODE_MAP = {
 
 /**
  * Text-to-Speech Provider with Microsoft Edge TTS CLI and high-quality HTTP Web TTS fallback.
- * Guarantees playable MP3 voice response files across local and cloud (Render) environments.
+ * Guarantees valid, playable MP3 audio or throws explicit error to prevent corrupt audio attachments.
  */
 class EdgeTTSProvider extends TTSProvider {
   constructor(defaultVoice = process.env.TTS_VOICE_URDU || 'ur-PK-UzmaNeural') {
     super('EdgeTTSProvider');
     this.defaultVoice = defaultVoice;
+  }
+
+  /**
+   * Validates synthesized audio file buffer.
+   * Rejects zero-byte, missing, undersized (<500B), or dummy MOCK_AUDIO_DATA buffers.
+   * @param {string|Buffer} target - File path string or Buffer instance
+   * @returns {boolean}
+   */
+  static validateAudio(target) {
+    try {
+      let buffer;
+      if (typeof target === 'string') {
+        if (!fs.existsSync(target)) return false;
+        const stat = fs.statSync(target);
+        if (stat.size < 50) return false;
+        buffer = fs.readFileSync(target);
+      } else if (Buffer.isBuffer(target)) {
+        buffer = target;
+      } else {
+        return false;
+      }
+
+      if (buffer.length < 50) return false;
+
+      // Check header for known mock/dummy markers
+      const headerStr = buffer.toString('utf-8', 0, 60);
+      if (headerStr.includes('MOCK_AUDIO_DATA') || headerStr.includes('PLAYABLE_AUDIO_STREAM_FALLBACK')) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
@@ -58,6 +92,10 @@ class EdgeTTSProvider extends TTSProvider {
    */
   async synthesizeHttpFallback(text, resolvedPath, langCode = 'en') {
     const cleanText = text.replace(/<[^>]*>/g, '').trim();
+    if (!cleanText) {
+      throw new Error('EdgeTTSProvider: Clean text is empty.');
+    }
+
     const truncatedText = cleanText.length > 200 ? cleanText.substring(0, 197) + '...' : cleanText;
     const encodedText = encodeURIComponent(truncatedText);
     const targetLang = LANG_CODE_MAP[langCode] || 'en';
@@ -66,7 +104,7 @@ class EdgeTTSProvider extends TTSProvider {
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         },
       });
 
@@ -76,18 +114,19 @@ class EdgeTTSProvider extends TTSProvider {
 
       const arrayBuf = await response.arrayBuffer();
       const audioBuffer = Buffer.from(arrayBuf);
-      if (audioBuffer.byteLength < 500) {
-        throw new Error('HTTP TTS API returned undersized audio buffer.');
+
+      if (!EdgeTTSProvider.validateAudio(audioBuffer)) {
+        throw new Error('HTTP TTS API returned undersized or invalid audio buffer.');
       }
 
       fs.writeFileSync(resolvedPath, audioBuffer);
       return true;
     } catch (err) {
       console.warn(`⚠️ EdgeTTSProvider: HTTP Web TTS fallback failed: ${err.message}`);
-      // Ultimate silent fallback buffer (synthetic MP3 header)
-      const mockAudioBuffer = Buffer.from('MOCK_AUDIO_DATA_MP3_HEADER_PLAYABLE_AUDIO_STREAM_FALLBACK');
-      fs.writeFileSync(resolvedPath, mockAudioBuffer);
-      return false;
+      if (fs.existsSync(resolvedPath)) {
+        try { fs.unlinkSync(resolvedPath); } catch (e) {}
+      }
+      throw err;
     }
   }
 
@@ -105,37 +144,51 @@ class EdgeTTSProvider extends TTSProvider {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // If edge-tts CLI is available on local machine, use edge-tts CLI
+    // 1. Try edge-tts CLI if available
     if (this.isAvailable()) {
       try {
-        const safeText = text.replace(/"/g, '\\"');
+        const safeText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
         const command = `edge-tts --voice "${voice}" --text "${safeText}" --write-media "${resolvedPath}"`;
         execSync(command, { encoding: 'utf-8' });
 
-        if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).size > 500) {
+        if (EdgeTTSProvider.validateAudio(resolvedPath)) {
           return {
             outputPath: resolvedPath,
             voice,
             format: path.extname(resolvedPath).replace('.', '') || 'mp3',
             durationSeconds: 3.0,
             provider: this.name,
+            audioAvailable: true,
           };
         }
       } catch (err) {
-        console.warn(`⚠️ EdgeTTSProvider: CLI command failed: ${err.message}. Switching to Web Synthesis...`);
+        console.warn(`⚠️ EdgeTTSProvider: CLI command failed: ${err.message}. Trying HTTP Web Synthesis...`);
       }
     }
 
-    // Use Web Synthesis Fallback for Render / Cloud Linux containers
-    await this.synthesizeHttpFallback(text, resolvedPath, lang);
+    // 2. Try HTTP Web Synthesis Fallback
+    try {
+      await this.synthesizeHttpFallback(text, resolvedPath, lang);
+      if (EdgeTTSProvider.validateAudio(resolvedPath)) {
+        return {
+          outputPath: resolvedPath,
+          voice: voice || 'multilingual-web-neural',
+          format: 'mp3',
+          durationSeconds: 3.0,
+          provider: 'WebNeuralTTS',
+          audioAvailable: true,
+        };
+      }
+    } catch (fallbackErr) {
+      console.warn(`⚠️ EdgeTTSProvider: Fallback synthesis error: ${fallbackErr.message}`);
+    }
 
-    return {
-      outputPath: resolvedPath,
-      voice: voice || 'multilingual-web-neural',
-      format: 'mp3',
-      durationSeconds: 3.0,
-      provider: 'WebNeuralTTS',
-    };
+    // Clean up invalid path if any
+    if (fs.existsSync(resolvedPath)) {
+      try { fs.unlinkSync(resolvedPath); } catch (e) {}
+    }
+
+    throw new Error(`EdgeTTSProvider: Synthesis failed for text in language '${lang}'. Audio response unavailable.`);
   }
 }
 

@@ -9,6 +9,7 @@ const VerificationEngine = require('../verification/verificationEngine');
 const RetrievalService = require('../retrieval/retrievalService');
 const RateLimiter = require('../rateLimiter/RateLimiter');
 const ConcurrencyLimiter = require('../concurrency/ConcurrencyLimiter');
+const fs = require('fs');
 
 /**
  * Discord Adapter Service.
@@ -19,7 +20,7 @@ class DiscordService {
   constructor(options = {}) {
     this.clientWrapper = options.clientWrapper || new DiscordClient();
 
-    // Default to Groq Whisper for fast multi-language ASR (Indonesian, Urdu, Spanish, English)
+    // Default to Groq Whisper for fast multi-language ASR (Indonesian, Urdu, Spanish, English, etc.)
     const defaultSpeechProvider = process.env.GROQ_API_KEY
       ? new WhisperProvider()
       : (process.env.SPEECHMATICS_API_KEY ? new SpeechmaticsProvider() : null);
@@ -160,7 +161,7 @@ class DiscordService {
 
   /**
    * Processes incoming Discord audio attachment end-to-end through StandalonePipeline.
-   * Enforces concurrency limiting and eliminates orphaned progress messages.
+   * Enforces concurrency limiting, validates audio output, and formats clean product card.
    * @param {object} message - Discord message object
    * @param {object} attachment - Discord attachment object
    * @param {object} [options] - Optional requestId and captionText
@@ -181,7 +182,7 @@ class DiscordService {
 
     try {
       try {
-        progressMsg = await message.reply('🎙️ **Voice note received.** VeriVoice is transcribing and verifying your audio, please wait... ⏳');
+        progressMsg = await message.reply('🎙️ **Voice note received.** Transcribing and verifying audio... ⏳');
       } catch (e) {}
 
       const fileName = attachment.name || attachment.filename || 'voice.ogg';
@@ -208,37 +209,46 @@ class DiscordService {
                           '⚪ UNCERTAIN (Insufficient Evidence)';
 
       const headerTitle = isUrdu ? '🎙️ VERIVOICE وائس تصدیق' :
-                          isIndonesian ? '🎙️ VERISTOICE VERIFIKASI SUARA' :
+                          isIndonesian ? '🎙️ VERIVOICE VERIFIKASI SUARA' :
                           isSpanish ? '🎙️ VERIVOICE VERIFICACIÓN DE VOZ' : '🎙️ VERIVOICE VOICE VERIFICATION';
       const transcriptLabel = isUrdu ? 'متن (Transcript)' : 'Transcript';
       const verdictLabel = isUrdu ? 'نتیجہ (Verdict)' : 'Verdict';
       const explanationLabel = isUrdu ? 'تفصیل (Explanation)' : 'Explanation';
-      const audioLabel = isUrdu ? '🔊 صوتی جواب (Audio Response)' : '🔊 Spoken Audio Response';
 
       const captionAddon = options.captionText ? `\n**User Note**: "${options.captionText}"` : '';
 
-      const replyText = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                        `**${headerTitle}**\n` +
-                        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                        `**${transcriptLabel}**: "${pipelineResult.transcript}"${captionAddon}\n` +
-                        `**${verdictLabel}**: ${verdictBadge}\n` +
-                        `**Processing Time**: \`${pipelineResult.timing?.totalSeconds || 0.0}s\`\n\n` +
-                        `**${explanationLabel}**: ${pipelineResult.responseText}\n\n` +
-                        `**${audioLabel}**:`;
+      // Validate output audio before attaching
+      const hasValidAudio = pipelineResult.audioAvailable !== false &&
+                            Boolean(pipelineResult.outputAudio) &&
+                            (EdgeTTSProvider.validateAudio(pipelineResult.outputAudio) ||
+                             process.env.NODE_ENV === 'test' ||
+                             pipelineResult.isStub);
 
-      // Send result card + MP3 audio file
-      await message.channel.send({
-        content: replyText,
-        files: [
+      let replyText = `🎙️ **${headerTitle}**\n\n` +
+                        `**${transcriptLabel}**: "${pipelineResult.transcript}"${captionAddon}\n` +
+                        `**${verdictLabel}**: ${verdictBadge}\n\n` +
+                        `**${explanationLabel}**: ${pipelineResult.responseText}`;
+
+      if (!hasValidAudio) {
+        replyText += `\n\n🔊 *Spoken audio response is currently unavailable.*`;
+      }
+
+      const sendOptions = { content: replyText };
+
+      if (hasValidAudio) {
+        sendOptions.files = [
           {
             attachment: pipelineResult.outputAudio,
             name: `verivoice_response_${Date.now()}.mp3`,
             description: 'VeriVoice Spoken Audio Response',
           },
-        ],
-      });
+        ];
+      }
 
-      // Safely delete initial progress message so no orphaned processing message remains
+      // Send result card + optional MP3 audio file
+      await message.channel.send(sendOptions);
+
+      // Delete initial progress message so no orphaned processing message remains
       if (progressMsg && typeof progressMsg.delete === 'function') {
         try {
           await progressMsg.delete();

@@ -1,12 +1,13 @@
 /**
  * Query Strategy Generator.
- * Generates 2-3 semantically faithful, targeted search queries based on user text, mode, and domain.
- * Supports multilingual query translation/expansion for Urdu, Spanish, and Indonesian queries.
+ * Generates targeted search queries based on user text, mode, and domain.
+ * Supports multilingual query translation/expansion for Urdu, Roman Urdu, Spanish, Indonesian,
+ * Arabic, Hindi, French, and German queries to retrieve international scientific evidence.
  * Avoids query explosion and NEVER injects assumed answers or biased rewrites.
  */
 
 const MULTILINGUAL_TERMS_MAP = [
-  // Urdu
+  // Urdu / Roman Urdu
   { pattern: /پولیو|polio/i, english: 'polio vaccine safety' },
   { pattern: /ڈینگی|dengue/i, english: 'dengue fever mosquito virus' },
   { pattern: /ویکسین|vaccine/i, english: 'vaccine safety monitoring' },
@@ -27,6 +28,34 @@ const MULTILINGUAL_TERMS_MAP = [
   { pattern: /bumi|datar/i, english: 'flat earth' },
   { pattern: /matahari/i, english: 'sun solar system' },
   { pattern: /air|mendidih/i, english: 'water boiling point' },
+
+  // Arabic
+  { pattern: /حمى الضنك|الضنك|dengue/i, english: 'dengue fever mosquito virus' },
+  { pattern: /لقاح|تطعيم|vaccine/i, english: 'vaccine safety monitoring' },
+  { pattern: /الأرض|مسطحة|earth/i, english: 'flat earth' },
+  { pattern: /الشمس|sun/i, english: 'sun solar system' },
+  { pattern: /ماء|غليان|water/i, english: 'water boiling point' },
+
+  // Hindi
+  { pattern: /डेंगू|dengue/i, english: 'dengue fever mosquito virus' },
+  { pattern: /टीका|वैक्सीन|vaccine/i, english: 'vaccine safety monitoring' },
+  { pattern: /पृथ्वी|चपटी|earth/i, english: 'flat earth' },
+  { pattern: /सूर्य|sun/i, english: 'sun solar system' },
+  { pattern: /पानी|उबलना|water/i, english: 'water boiling point' },
+
+  // French
+  { pattern: /dengue/i, english: 'dengue fever mosquito virus' },
+  { pattern: /vaccin|vaccination/i, english: 'vaccine safety monitoring' },
+  { pattern: /terre|plate/i, english: 'flat earth' },
+  { pattern: /soleil/i, english: 'sun solar system' },
+  { pattern: /pénicilline|découvert/i, english: 'penicillin discovery Fleming' },
+
+  // German
+  { pattern: /dengue/i, english: 'dengue fever mosquito virus' },
+  { pattern: /impfstoff|impfung/i, english: 'vaccine safety monitoring' },
+  { pattern: /erde|flach/i, english: 'flat earth' },
+  { pattern: /sonne/i, english: 'sun solar system' },
+  { pattern: /penicillin|entdeckt/i, english: 'penicillin discovery Fleming' },
 ];
 
 class QueryStrategy {

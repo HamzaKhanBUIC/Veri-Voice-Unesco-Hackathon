@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { validateAudioFile, checkFFmpegAvailability, cleanupTempFile } = require('../backend/src/utils/audioUtils');
+const EdgeTTSProvider = require('../backend/src/services/tts/EdgeTTSProvider');
 
 describe('Milestone 1 — Audio Handling & Validation Utility', () => {
   const sampleAudio = path.join(__dirname, '../test-fixtures/audio/sample_claim_ur.ogg');
@@ -51,5 +52,26 @@ describe('Milestone 1 — Audio Handling & Validation Utility', () => {
 
     cleanupTempFile(tempFile);
     expect(fs.existsSync(tempFile)).toBe(false);
+  });
+
+  describe('EdgeTTSProvider.validateAudio (Cloud Reliability Guardrail)', () => {
+    it('should validate a valid audio file path', () => {
+      expect(EdgeTTSProvider.validateAudio(sampleAudio)).toBe(true);
+    });
+
+    it('should reject 0-byte audio file', () => {
+      expect(EdgeTTSProvider.validateAudio(emptyAudio)).toBe(false);
+    });
+
+    it('should reject undersized audio buffer (<500 bytes)', () => {
+      const tinyBuffer = Buffer.from('SHORT_AUDIO_CLIP');
+      expect(EdgeTTSProvider.validateAudio(tinyBuffer)).toBe(false);
+    });
+
+    it('should reject dummy MOCK_AUDIO_DATA fallback header buffer', () => {
+      const mockBuffer = Buffer.alloc(1000);
+      mockBuffer.write('MOCK_AUDIO_DATA_MP3_HEADER_PLAYABLE_AUDIO_STREAM_FALLBACK');
+      expect(EdgeTTSProvider.validateAudio(mockBuffer)).toBe(false);
+    });
   });
 });

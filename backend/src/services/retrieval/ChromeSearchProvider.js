@@ -3,6 +3,7 @@ const https = require('https');
 /**
  * Chrome / Live Web Search Provider.
  * Queries live encyclopedic and web search APIs (Wikipedia REST API & DuckDuckGo) with fast parallel execution.
+ * Extracts direct publisher target URLs where available.
  */
 class ChromeSearchProvider {
   constructor(options = {}) {
@@ -87,7 +88,7 @@ class ChromeSearchProvider {
   }
 
   /**
-   * DuckDuckGo HTML Search
+   * DuckDuckGo HTML Search with Direct Target Publisher URL Extraction
    */
   async searchDuckDuckGo(query) {
     const encoded = encodeURIComponent(query);
@@ -99,13 +100,39 @@ class ChromeSearchProvider {
       });
 
       const results = [];
-      const snippetRegex = /<a class="result__snippet[^>]*>([\s\S]*?)<\/a>/gi;
-      let snippetMatch;
+      const resultBlockRegex = /<div class="result__body">([\s\S]*?)<\/div>/gi;
+      let blockMatch;
       let count = 0;
 
-      while ((snippetMatch = snippetRegex.exec(html)) !== null && count < 2) {
-        const cleanSnippet = snippetMatch[1].replace(/<[^>]+>/g, '').trim();
+      while ((blockMatch = resultBlockRegex.exec(html)) !== null && count < 2) {
+        const blockHtml = blockMatch[1];
+        
+        // Extract snippet
+        const snippetMatch = /<a class="result__snippet[^>]*>([\s\S]*?)<\/a>/i.exec(blockHtml);
+        const cleanSnippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+
+        // Extract direct target URL
+        let targetUrl = `https://duckduckgo.com/?q=${encoded}`;
+        const linkMatch = /<a [^>]*href="([^"]+)"/i.exec(blockHtml);
+        if (linkMatch) {
+          const rawHref = linkMatch[1];
+          if (rawHref.includes('uddg=')) {
+            try {
+              const urlParam = rawHref.split('uddg=')[1].split('&')[0];
+              targetUrl = decodeURIComponent(urlParam);
+            } catch (e) {}
+          } else if (rawHref.startsWith('http')) {
+            targetUrl = rawHref;
+          }
+        }
+
         if (cleanSnippet.length > 25) {
+          let publisherName = 'Live Web Source';
+          try {
+            const parsedUrl = new URL(targetUrl);
+            publisherName = parsedUrl.hostname.replace(/^www\./, '');
+          } catch (e) {}
+
           results.push({
             claimId: `DDG_SEARCH_${Date.now()}_${count}`,
             claim: `Live Search Evidence (${query}): ${cleanSnippet.slice(0, 100)}...`,
@@ -115,9 +142,10 @@ class ChromeSearchProvider {
             isLiveWeb: true,
             sources: [
               {
-                title: `Live Search Result for ${query}`,
-                organization: 'DuckDuckGo Live Web Search',
-                url: `https://duckduckgo.com/?q=${encoded}`,
+                title: `Live Search Evidence (${publisherName})`,
+                organization: publisherName,
+                url: targetUrl,
+                authorityLevel: 'SECONDARY_AUTHORITY',
               },
             ],
           });
@@ -139,11 +167,12 @@ class ChromeSearchProvider {
         res.on('end', () => resolve(data));
       });
 
-      req.on('error', reject);
       req.on('timeout', () => {
         req.destroy();
-        reject(new Error('Web search request timed out'));
+        reject(new Error(`ChromeSearchProvider request timeout (${this.timeoutMs}ms)`));
       });
+
+      req.on('error', (err) => reject(err));
     });
   }
 }

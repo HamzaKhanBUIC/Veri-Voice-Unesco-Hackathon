@@ -107,9 +107,21 @@ class StandalonePipeline {
 
     // Step 3: Text-To-Speech Synthesis (Uses detected language neural voice)
     const ttsStart = Date.now();
-    const ttsResult = await this.ttsProvider.synthesize(responseText, defaultOutputPath, {
-      language: detectedLang,
-    });
+    let ttsResult = null;
+    let audioAvailable = false;
+    let outputAudio = null;
+
+    try {
+      ttsResult = await this.ttsProvider.synthesize(responseText, defaultOutputPath, {
+        language: detectedLang,
+      });
+      outputAudio = ttsResult?.outputPath || null;
+      audioAvailable = Boolean(outputAudio);
+    } catch (ttsErr) {
+      console.warn(`⚠️ [${requestId}] StandalonePipeline: TTS synthesis unavailable: ${ttsErr.message}`);
+      audioAvailable = false;
+      outputAudio = null;
+    }
     const ttsMs = Date.now() - ttsStart;
 
     const totalMs = Date.now() - startTime;
@@ -118,8 +130,9 @@ class StandalonePipeline {
       success: true,
       requestId,
       inputAudio: validation.details.path,
-      outputAudio: ttsResult.outputPath,
-      audioPath: ttsResult.outputPath,
+      outputAudio,
+      audioPath: outputAudio,
+      audioAvailable,
       transcript: sttResult.text,
       language: detectedLang,
       verdict,

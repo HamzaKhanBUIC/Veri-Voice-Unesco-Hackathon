@@ -120,23 +120,19 @@ class DiscordCommands {
 
     if (commandName === 'help') {
       const card = GuidanceService.getOnboardingCard();
-      const content = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                      `${card.title}\n` +
-                      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      const content = `ℹ️ **${card.title}**\n\n` +
                       `${card.description}\n\n` +
                       `**Primary Modes:**\n` +
                       card.modes.map((m) => `• \`${m.command}\`: ${m.description}`).join('\n') + `\n\n` +
                       `**Domain Shortcuts:**\n` +
                       card.shortcuts.map((s) => `• \`${s.command} <text>\`: ${s.label}`).join('\n') + `\n\n` +
-                      `${card.voiceNotice}`;
+                      `*${card.voiceNotice}*`;
       return { type: 'text', content };
     }
 
     if (commandName === 'about') {
       const card = GuidanceService.getAboutCard();
-      const content = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                      `${card.title}\n` +
-                      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      const content = `🌐 **${card.title}**\n\n` +
                       `${card.description}\n\n` +
                       `**Key Differentiators:**\n` +
                       card.differentiators.map((d) => `• ${d}`).join('\n') + `\n\n` +
@@ -178,22 +174,23 @@ class DiscordCommands {
 
     const verifResult = await engine.verifyClaim(userText, matches, { mode, requestedDomain });
 
-    // Format Product Response Cards
+    // Format Product Response Cards cleanly
     const isResearch = verifResult.mode === 'GENERAL_RESEARCH' || verifResult.verdict === 'RESEARCH_RESPONSE';
 
-    const header = isResearch ? '🌐 VERIVOICE GENERAL RESEARCH' : '🔎 VERIVOICE VERIFICATION';
+    const header = isResearch ? '🌐 **VERIVOICE GENERAL RESEARCH**' : '🔎 **VERIVOICE VERIFICATION**';
     const domainIcon = verifResult.domain === 'EARTH_SPACE' ? '🌍 Earth & Space' :
                        verifResult.domain === 'HEALTH' ? '🏥 Health & Medicine' :
                        verifResult.domain === 'WEATHER_CLIMATE' ? '🌦️ Climate & Weather' :
                        verifResult.domain === 'DISASTER' ? '🚨 Disasters & Emergencies' :
                        verifResult.domain === 'EDUCATION' ? '🎓 Education & Policy' : '🌐 General';
 
-    const verdictBadge = verifResult.verdict === 'TRUE' ? '🟢 TRUE' :
-                        verifResult.verdict === 'FALSE' ? '🔴 FALSE' :
-                        verifResult.verdict === 'MIXED' ? '🟡 MIXED' :
-                        isResearch ? 'ℹ️ RESEARCH RESULT' : '⚪ UNCERTAIN (Insufficient Evidence)';
+    const verdictBadge = verifResult.verdict === 'TRUE' ? '🟢 **TRUE**' :
+                        verifResult.verdict === 'FALSE' ? '🔴 **FALSE**' :
+                        verifResult.verdict === 'MIXED' ? '🟡 **MIXED**' :
+                        isResearch ? '🔬 **RESEARCH RESPONSE**' : '⚪ **UNCERTAIN** (Insufficient Evidence)';
 
-    const confidenceTag = verifResult.confidence || 'LOW';
+    const confidenceLabel = verifResult.confidence === 'HIGH' || verifResult.confidence >= 0.8 ? 'High' :
+                            verifResult.confidence === 'MEDIUM' || verifResult.confidence >= 0.5 ? 'Medium' : 'Low';
 
     let evidenceBullets = '';
     if (verifResult.evidence && verifResult.evidence.length > 0) {
@@ -202,20 +199,18 @@ class DiscordCommands {
 
     let sourceCitations = '';
     if (verifResult.sources && verifResult.sources.length > 0) {
-      sourceCitations = '\n\n**Sources & Citations:**\n' + verifResult.sources.map((s) => `• [${s.organization || s.sourceTitle || 'Official Source'}](${s.url}) (${s.authorityLevel || 'PRIMARY_AUTHORITY'})`).join('\n');
+      sourceCitations = '\n\n**Sources & Citations:**\n' + verifResult.sources.map((s) => `• [${s.organization || s.sourceTitle || 'Official Source'}](${s.url})`).join('\n');
     }
 
-    const howChecked = '\n\n**How VeriVoice Checked:**\n' +
-                       `Domain Detection (\`${verifResult.domain || 'GENERAL'}\`) ➔ Targeted Retrieval ➔ Source Authority (${verifResult.sources?.length || 0} sources) ➔ Evidence Evaluation ➔ Citation Validation`;
+    const howChecked = '\n\n🛡️ *How VeriVoice checked this*:\n' +
+                       `Retrieved live evidence ➔ evaluated source authority ➔ compared evidence ➔ validated citations.`;
 
-    const content = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                    `${header}\n` +
-                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                    `**Input**: "${verifResult.languageMetadata?.originalText || userText}"\n` +
+    const content = `${header}\n\n` +
+                    `**Claim / Question**: "${verifResult.languageMetadata?.originalText || userText}"\n` +
                     `**Domain**: ${domainIcon}\n` +
                     (!isResearch ? `**Verdict**: ${verdictBadge}\n` : '') +
-                    `**Evidence Strength**: \`${verifResult.evidenceStrength || 'SUFFICIENT'}\` | Confidence: \`${confidenceTag}\`\n\n` +
-                    `**Explanation / Answer**: ${verifResult.explanation || verifResult.answer}` +
+                    `**Confidence**: ${confidenceLabel}\n\n` +
+                    `**${isResearch ? 'Answer' : 'Explanation'}**: ${verifResult.explanation || verifResult.answer}` +
                     evidenceBullets +
                     sourceCitations +
                     howChecked;
