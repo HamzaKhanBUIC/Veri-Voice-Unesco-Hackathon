@@ -3,6 +3,7 @@ import { Button } from '../components/ui/Button';
 import { AcousticCore } from '../components/voice/AcousticCore';
 import { VerdictBadge } from '../components/ui/VerdictBadge';
 import { AcousticAnchor } from '../components/brand/AcousticAnchor';
+import { getTranslation } from '../i18n/translations';
 import { AppView } from '../types';
 
 interface LandingPageProps {
@@ -17,6 +18,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   currentLanguage = 'en',
 }) => {
   const [demoState, setDemoState] = useState<'IDLE' | 'LISTENING' | 'CHECKING' | 'RESPONDING'>('RESPONDING');
+  const t = getTranslation(currentLanguage);
 
   const sampleClaims = [
     { text: 'Are polio drops safe for infants?', lang: 'EN', verdict: 'TRUE' as const },
@@ -48,15 +50,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="px-4 md:px-8 max-w-[1280px] mx-auto w-full flex flex-col items-center text-center gap-6 md:gap-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-border-subtle text-xs font-mono uppercase tracking-widest text-text-secondary animate-fade-up">
           <AcousticAnchor size={12} pulse />
-          <span>Multilingual Voice & Evidence Verification</span>
+          <span>{t.hero.tagline}</span>
         </div>
 
         <h1 className="font-editorial text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-text-primary leading-[1.1] max-w-[980px]">
-          Instant, Voice-First Evidence Verification.
+          {t.hero.headline}
         </h1>
 
         <p className="font-sans text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl leading-relaxed">
-          Speak or type health rumors in Urdu, English, Spanish, or Indonesian. VeriVoice cross-references authoritative medical sources to deliver instant spoken verdicts and verified citations.
+          {t.hero.subheadline}
         </p>
 
         {/* Action CTAs */}
@@ -68,7 +70,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="w-full sm:w-auto min-w-[180px]"
             icon={<span className="material-symbols-outlined text-[20px]">mic</span>}
           >
-            Start Voice Talk
+            {t.hero.startTalk}
           </Button>
 
           <Button
@@ -78,7 +80,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="w-full sm:w-auto min-w-[180px]"
             icon={<span className="material-symbols-outlined text-[20px]">search</span>}
           >
-            Search & Research
+            {t.hero.searchResearch}
           </Button>
 
           <a
@@ -88,7 +90,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#5865F2]/15 hover:bg-[#5865F2]/25 text-[#7983F5] hover:text-white border border-[#5865F2]/40 text-sm font-mono uppercase tracking-wider transition-all w-full sm:w-auto"
           >
             <span className="material-symbols-outlined text-[18px]">forum</span>
-            <span>Discord Bot</span>
+            <span>{t.hero.discordBot}</span>
           </a>
         </div>
       </section>
@@ -96,9 +98,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* 2. HOW TO USE VERIVOICE (Clear 3-Step Practical Guide) */}
       <section className="px-4 md:px-8 max-w-[1200px] mx-auto w-full">
         <div className="text-center mb-8">
-          <span className="text-xs font-mono uppercase tracking-widest text-brand-teal-bright">Quick Start</span>
+          <span className="text-xs font-mono uppercase tracking-widest text-brand-teal-bright">{t.quickStart.badge}</span>
           <h2 className="font-editorial text-2xl sm:text-3xl font-semibold text-text-primary mt-1">
-            How to Use VeriVoice
+            {t.quickStart.title}
           </h2>
         </div>
 
@@ -113,15 +115,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="material-symbols-outlined text-[24px]">mic</span>
               </div>
               <div>
-                <span className="text-[11px] font-mono uppercase text-brand-teal-bright font-semibold">01 · Voice Room</span>
-                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">Talk Mode</h3>
+                <span className="text-[11px] font-mono uppercase text-brand-teal-bright font-semibold">{t.quickStart.step1Tag}</span>
+                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">{t.quickStart.step1Title}</h3>
               </div>
               <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                Tap the Acoustic Core and speak naturally in Urdu, English, Spanish, or Indonesian. Listen to concise neural audio responses with instant barge-in interruption.
+                {t.quickStart.step1Desc}
               </p>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright group-hover:translate-x-1 transition-transform">
-              <span>Open Talk Mode</span>
+              <span>{t.quickStart.step1Btn}</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </div>
           </div>
@@ -136,15 +138,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="material-symbols-outlined text-[24px]">manage_search</span>
               </div>
               <div>
-                <span className="text-[11px] font-mono uppercase text-brand-teal-bright font-semibold">02 · Deep Research</span>
-                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">Chat & Evidence Rail</h3>
+                <span className="text-[11px] font-mono uppercase text-brand-teal-bright font-semibold">{t.quickStart.step2Tag}</span>
+                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">{t.quickStart.step2Title}</h3>
               </div>
               <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                Type questions or paste complex claims to inspect primary citations from WHO, CDC, PubMed, and NIH with live source authority scoring.
+                {t.quickStart.step2Desc}
               </p>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright group-hover:translate-x-1 transition-transform">
-              <span>Open Chat & Evidence</span>
+              <span>{t.quickStart.step2Btn}</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </div>
           </div>
@@ -161,15 +163,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="material-symbols-outlined text-[24px]">forum</span>
               </div>
               <div>
-                <span className="text-[11px] font-mono uppercase text-[#7983F5] font-semibold">03 · Community Bot</span>
-                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">Discord Bot</h3>
+                <span className="text-[11px] font-mono uppercase text-[#7983F5] font-semibold">{t.quickStart.step3Tag}</span>
+                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">{t.quickStart.step3Title}</h3>
               </div>
               <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                Add <span className="font-mono text-text-primary">@VeriVoice</span> to your server. Send voice notes or use <span className="font-mono text-text-primary">/verify</span> to verify rumors directly in community channels.
+                {t.quickStart.step3Desc}
               </p>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-mono text-[#7983F5] group-hover:translate-x-1 transition-transform">
-              <span>Invite to Discord</span>
+              <span>{t.quickStart.step3Btn}</span>
               <span className="material-symbols-outlined text-[16px]">open_in_new</span>
             </div>
           </a>
@@ -182,7 +184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-text-secondary flex items-center gap-2">
               <span className="material-symbols-outlined text-brand-teal-bright text-[16px]">touch_app</span>
-              <span>Try a Sample Claim (Click to Test)</span>
+              <span>{t.samples.title}</span>
             </span>
           </div>
 

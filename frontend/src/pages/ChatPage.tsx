@@ -4,6 +4,7 @@ import { AudioWavePlayer } from '../components/voice/AudioWavePlayer';
 import { EvidenceRail } from '../components/evidence/EvidenceRail';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { apiClient } from '../services/api/ApiClient';
+import { getTranslation } from '../i18n/translations';
 import { ChatMessage, DomainCategory, AppView } from '../types';
 
 interface ChatPageProps {
@@ -17,10 +18,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   currentLanguage,
   onNavigate,
 }) => {
+  const t = getTranslation(currentLanguage);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState(initialClaim);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState('Analyzing claim & querying databases...');
+  const [loadingStatus, setLoadingStatus] = useState(t.chat.analyzing);
   const [selectedDomain, setSelectedDomain] = useState<DomainCategory>('ALL');
   const [activeEvidence, setActiveEvidence] = useState<ChatMessage | null>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -36,11 +38,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   } = useVoiceRecorder(30);
 
   const domainPills: { id: DomainCategory; label: string; icon: string }[] = [
-    { id: 'ALL', label: 'All Domains', icon: 'apps' },
-    { id: 'HEALTH', label: 'Health & Medicine', icon: 'medical_services' },
-    { id: 'SCIENCE', label: 'Science & Astronomy', icon: 'science' },
-    { id: 'WEATHER_CLIMATE', label: 'Climate & Weather', icon: 'cloud' },
-    { id: 'DISASTER', label: 'Disaster Warnings', icon: 'warning' },
+    { id: 'ALL', label: t.chat.domainAll, icon: 'apps' },
+    { id: 'HEALTH', label: t.chat.domainHealth, icon: 'medical_services' },
+    { id: 'SCIENCE', label: t.chat.domainScience, icon: 'science' },
+    { id: 'WEATHER_CLIMATE', label: t.chat.domainClimate, icon: 'cloud' },
+    { id: 'DISASTER', label: t.chat.domainDisaster, icon: 'warning' },
   ];
 
   const sampleClaims = [
@@ -55,13 +57,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     if (isLoading) {
-      setLoadingStatus('Analyzing claim & searching authoritative databases...');
+      setLoadingStatus(t.chat.analyzing);
       timer = setTimeout(() => {
-        setLoadingStatus('⚡ Server is warming up... Verifying citations & grounding verdict.');
+        setLoadingStatus(t.chat.serverWarmup);
       }, 3500);
     }
     return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, [isLoading, currentLanguage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -323,7 +325,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                         >
                           <span className="material-symbols-outlined text-[16px]">account_tree</span>
                           <span>
-                            View Citations & Evidence ({msg.evidence?.length || 0} Sources)
+                            {t.chat.viewEvidence} ({msg.evidence?.length || 0} Sources)
                           </span>
                         </button>
 
@@ -380,7 +382,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Enter a claim or research inquiry..."
+              placeholder={t.chat.placeholder}
               disabled={isLoading || isRecording}
               className="flex-1 bg-transparent border-none text-text-primary font-sans text-sm md:text-base px-3 py-2 focus:outline-none placeholder:text-text-muted"
             />

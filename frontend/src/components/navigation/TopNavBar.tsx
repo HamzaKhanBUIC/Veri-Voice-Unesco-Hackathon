@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { VeriVoiceLogo } from '../brand/VeriVoiceLogo';
 import { LanguageSelector } from './LanguageSelector';
-import { StatusIndicator } from '../ui/StatusIndicator';
+import { getTranslation } from '../../i18n/translations';
 import { AppView } from '../../types';
 
 interface TopNavBarProps {
@@ -9,7 +9,6 @@ interface TopNavBarProps {
   onViewChange: (view: AppView) => void;
   currentLanguage: string;
   onLanguageChange: (code: string) => void;
-  systemStatus?: 'online' | 'checking' | 'warning' | 'offline';
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -17,15 +16,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   onViewChange,
   currentLanguage,
   onLanguageChange,
-  systemStatus = 'online',
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const t = getTranslation(currentLanguage);
 
   const navItems: { label: string; view: AppView; icon: string }[] = [
-    { label: 'Overview', view: 'landing', icon: 'home' },
-    { label: 'Talk (Voice)', view: 'talk', icon: 'graphic_eq' },
-    { label: 'Chat & Evidence', view: 'chat', icon: 'search' },
-    { label: 'Methodology', view: 'methodology', icon: 'shield' },
+    { label: t.nav.overview, view: 'landing', icon: 'home' },
+    { label: t.nav.talk, view: 'talk', icon: 'graphic_eq' },
+    { label: t.nav.chat, view: 'chat', icon: 'search' },
+    { label: t.nav.methodology, view: 'methodology', icon: 'shield' },
   ];
 
   return (
@@ -66,7 +65,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           })}
         </nav>
 
-        {/* Right: Actions, Language & Status */}
+        {/* Right: Actions & Language */}
         <div className="flex items-center gap-2.5 md:gap-3">
           <a
             href="https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=3147776&scope=bot%20applications.commands"
@@ -76,12 +75,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5865F2]/15 hover:bg-[#5865F2]/25 text-[#7983F5] hover:text-white border border-[#5865F2]/30 text-xs font-mono transition-all"
           >
             <span className="material-symbols-outlined text-[16px]">forum</span>
-            <span className="hidden lg:inline">Discord Bot</span>
+            <span className="hidden lg:inline">{t.nav.discordBot}</span>
           </a>
-
-          <div className="hidden sm:block">
-            <StatusIndicator status={systemStatus} />
-          </div>
 
           <LanguageSelector
             currentLanguage={currentLanguage}
@@ -121,10 +116,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               <span>{item.label}</span>
             </button>
           ))}
-          <div className="pt-2 mt-2 border-t border-border-subtle flex justify-between items-center px-2">
-            <span className="text-[11px] font-mono text-text-muted uppercase">Status:</span>
-            <StatusIndicator status={systemStatus} />
-          </div>
+          <a
+            href="https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=3147776&scope=bot%20applications.commands"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full text-left px-4 py-3 rounded text-sm font-mono uppercase flex items-center gap-3 text-[#7983F5] hover:bg-surface-container/50"
+          >
+            <span className="material-symbols-outlined text-[18px]">forum</span>
+            <span>{t.nav.discordBot}</span>
+          </a>
         </div>
       )}
     </header>

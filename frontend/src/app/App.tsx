@@ -5,18 +5,20 @@ import { TalkPage } from '../pages/TalkPage';
 import { ChatPage } from '../pages/ChatPage';
 import { MethodologyPage } from '../pages/MethodologyPage';
 import { apiClient } from '../services/api/ApiClient';
-import { AppView } from '../types';
 import { SUPPORTED_LANGUAGES } from '../components/navigation/LanguageSelector';
+import { getTranslation } from '../i18n/translations';
+import { AppView } from '../types';
 
 export const App: React.FC = () => {
   const [activeView, setActiveView] = useState<AppView>('landing');
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [selectedClaim, setSelectedClaim] = useState<string>('');
-  const [systemStatus, setSystemStatus] = useState<'online' | 'checking' | 'warning' | 'offline'>('checking');
   const [dismissWarmupBanner, setDismissWarmupBanner] = useState(false);
   const [showWarmupNotice, setShowWarmupNotice] = useState(false);
 
-  // Set HTML dir attribute when language changes (RTL for Urdu/Arabic)
+  const t = getTranslation(currentLanguage);
+
+  // Set HTML dir attribute when language changes (RTL for Urdu)
   useEffect(() => {
     const langConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage);
     const direction = langConfig?.dir || 'ltr';
@@ -28,7 +30,6 @@ export const App: React.FC = () => {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const checkBackend = async () => {
-      setSystemStatus('checking');
       timer = setTimeout(() => {
         setShowWarmupNotice(true);
       }, 1500);
@@ -36,10 +37,8 @@ export const App: React.FC = () => {
       const health = await apiClient.checkHealth();
       clearTimeout(timer);
       if (health && health.status === 'ok') {
-        setSystemStatus('online');
         setShowWarmupNotice(false);
       } else {
-        setSystemStatus('offline');
         setShowWarmupNotice(false);
       }
     };
@@ -64,7 +63,6 @@ export const App: React.FC = () => {
         }}
         currentLanguage={currentLanguage}
         onLanguageChange={setCurrentLanguage}
-        systemStatus={systemStatus}
       />
 
       {/* Dynamic Server Warm-Up Toast / Banner */}
@@ -73,9 +71,9 @@ export const App: React.FC = () => {
           <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="w-2 h-2 rounded-full bg-brand-teal-bright animate-ping" />
-              <span className="text-brand-teal-bright font-semibold">Engine Warming Up:</span>
+              <span className="text-brand-teal-bright font-semibold">Server Warming Up:</span>
               <span className="text-text-secondary hidden sm:inline">
-                Cloud verification instance is waking up from standby (~15s on cold start). Verification & voice tools will be ready momentarily.
+                Cloud verification instance is waking up (~15s on cold start). Verification & voice tools will be ready momentarily.
               </span>
               <span className="text-text-secondary sm:hidden">
                 Cloud instance waking up (~15s)...
@@ -126,16 +124,17 @@ export const App: React.FC = () => {
         {activeView === 'methodology' && (
           <MethodologyPage
             onNavigate={setActiveView}
+            currentLanguage={currentLanguage}
           />
         )}
       </main>
 
-      {/* Persistent Clean Footer (Stitch C3) */}
+      {/* Persistent Clean Footer */}
       <footer className="border-t border-border-subtle bg-surface-container-lowest py-8 px-4 md:px-8 mt-auto text-xs font-mono text-text-muted">
         <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">shield</span>
-            <span>VeriVoice © 2026 · UNESCO Infodemic Mitigation Initiative</span>
+            <span>{t.footer.copyright}</span>
           </div>
 
           <div className="flex items-center gap-6">
@@ -143,18 +142,18 @@ export const App: React.FC = () => {
               onClick={() => setActiveView('methodology')}
               className="hover:text-text-primary transition-colors uppercase"
             >
-              Methodology
+              {t.footer.methodology}
             </button>
             <a
-              href="https://discord.com"
+              href="https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=3147776&scope=bot%20applications.commands"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-text-primary transition-colors uppercase"
             >
-              Discord Bot
+              {t.footer.discordBot}
             </a>
             <a
-              href="https://github.com"
+              href="https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-text-primary transition-colors uppercase"

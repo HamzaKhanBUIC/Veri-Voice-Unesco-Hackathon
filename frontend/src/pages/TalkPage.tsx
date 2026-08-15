@@ -5,6 +5,7 @@ import { AudioWavePlayer } from '../components/voice/AudioWavePlayer';
 import { EvidenceRail } from '../components/evidence/EvidenceRail';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { apiClient } from '../services/api/ApiClient';
+import { getTranslation } from '../i18n/translations';
 import {
   VerifyResponse,
   VoiceState,
@@ -23,11 +24,12 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   onNavigate,
   currentLanguage,
 }) => {
+  const t = getTranslation(currentLanguage);
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
   const [currentResult, setCurrentResult] = useState<VerifyResponse | null>(null);
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Tap the Acoustic Core or Hold Space to Speak');
+  const [statusMessage, setStatusMessage] = useState(t.talk.tapToSpeak);
   
   // Multi-Turn Conversational Session State
   const [sessionId, setSessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
@@ -36,6 +38,14 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const [activeEvidence, setActiveEvidence] = useState<EvidenceItem[]>([]);
   const [activeClaim, setActiveClaim] = useState<string>('');
   const [responseLanguage, setResponseLanguage] = useState<string>(currentLanguage || 'en');
+
+  // Sync language changes
+  useEffect(() => {
+    setResponseLanguage(currentLanguage);
+    if (voiceState === 'IDLE') {
+      setStatusMessage(t.talk.tapToSpeak);
+    }
+  }, [currentLanguage]);
 
   // Ref to stop active audio on barge-in
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -236,7 +246,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs uppercase tracking-widest text-brand-teal-bright flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-brand-teal-bright animate-pulse" />
-            VeriVoice Talk (Voice Assistant)
+            {t.talk.roomTitle}
           </span>
         </div>
 
@@ -250,7 +260,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             onClick={() => onNavigate('chat')}
             className="px-3 py-1 bg-surface-container hover:bg-surface-container-high rounded text-xs font-mono text-text-secondary hover:text-text-primary border border-border-subtle transition-tactile"
           >
-            Switch to Chat
+            {t.nav.chat}
           </button>
         </div>
       </div>
@@ -373,7 +383,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
                   className="inline-flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright hover:underline"
                 >
                   <span className="material-symbols-outlined text-[16px]">account_tree</span>
-                  <span>View Evidence Rail ({currentResult.evidence?.length || activeEvidence.length || 0} Sources)</span>
+                  <span>{t.chat.viewEvidence} ({currentResult.evidence?.length || activeEvidence.length || 0} Sources)</span>
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -381,14 +391,14 @@ export const TalkPage: React.FC<TalkPageProps> = ({
                     onClick={handleResetSession}
                     className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high rounded text-xs font-mono text-text-secondary border border-border-subtle"
                   >
-                    New Claim
+                    {t.talk.newClaim}
                   </button>
                   <button
                     onClick={handleCoreClick}
                     className="px-3 py-1.5 bg-brand-teal hover:bg-brand-teal-dim text-white rounded text-xs font-mono font-medium shadow flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[16px]">mic</span>
-                    <span>Speak (Interrupt / Follow-up)</span>
+                    <span>{t.hero.startTalk}</span>
                   </button>
                 </div>
               </div>

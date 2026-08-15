@@ -1,15 +1,20 @@
 import React from 'react';
 import { Card } from '../components/ui/Card';
 import { AcousticAnchor } from '../components/brand/AcousticAnchor';
+import { getTranslation } from '../i18n/translations';
 import { AppView } from '../types';
 
 interface MethodologyPageProps {
   onNavigate: (view: AppView) => void;
+  currentLanguage?: string;
 }
 
 export const MethodologyPage: React.FC<MethodologyPageProps> = ({
   onNavigate,
+  currentLanguage = 'en',
 }) => {
+  const t = getTranslation(currentLanguage);
+
   return (
     <div className="flex flex-col gap-12 max-w-4xl mx-auto px-4 py-8 md:py-12 text-left">
       {/* Header */}
@@ -19,10 +24,10 @@ export const MethodologyPage: React.FC<MethodologyPageProps> = ({
           <span>Trust, Safety & Verification Methodology</span>
         </div>
         <h1 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-text-primary">
-          How VeriVoice Checks Truth
+          {t.methodology.title}
         </h1>
         <p className="text-text-secondary font-sans text-base leading-relaxed">
-          VeriVoice is engineered for strict evidence-grounding. Built specifically for UNESCO infodemic mitigation, our architecture eliminates generative hallucinations through deterministic guardrails.
+          {t.methodology.subtitle}
         </p>
       </div>
 
