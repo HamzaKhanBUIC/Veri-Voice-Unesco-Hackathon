@@ -8,11 +8,13 @@ import { AppView } from '../types';
 interface LandingPageProps {
   onNavigate: (view: AppView) => void;
   onSelectSampleClaim?: (claim: string) => void;
+  currentLanguage?: string;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onNavigate,
   onSelectSampleClaim,
+  currentLanguage = 'en',
 }) => {
   const [demoState, setDemoState] = useState<'IDLE' | 'LISTENING' | 'CHECKING' | 'RESPONDING'>('RESPONDING');
 
@@ -23,6 +25,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     { text: 'Apakah bawang putih menyembuhkan virus corona?', lang: 'ID', verdict: 'FALSE' as const },
     { text: 'What causes dengue fever and how is it transmitted?', lang: 'EN', verdict: 'RESEARCH_RESPONSE' as const },
   ];
+
+  // Reorder sample claims so the active language is prioritized first
+  const activeLanguageClaims = [...sampleClaims].sort((a, b) => {
+    if (a.lang.toLowerCase() === currentLanguage.toLowerCase()) return -1;
+    if (b.lang.toLowerCase() === currentLanguage.toLowerCase()) return 1;
+    return 0;
+  });
 
   const handleSampleClick = (claim: string) => {
     if (onSelectSampleClaim) {
@@ -178,7 +187,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {sampleClaims.map((item, idx) => (
+            {activeLanguageClaims.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSampleClick(item.text)}

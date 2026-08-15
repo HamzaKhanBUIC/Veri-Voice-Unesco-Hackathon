@@ -50,7 +50,8 @@ class ConversationManager {
         activeEvidence: [],
         history: [],
         inputLanguage: 'en',
-        responseLanguage: 'en',
+        responseLanguage: null,
+        userExplicitLanguage: null,
         lastIntent: null,
         isExpired: false,
       };
@@ -65,7 +66,10 @@ class ConversationManager {
       if (validation.valid && validation.data) {
         const d = validation.data;
         if (d.activeClaim && !session.activeClaim) session.activeClaim = d.activeClaim;
-        if (d.targetLanguage) session.responseLanguage = d.targetLanguage;
+        if (d.targetLanguage) {
+          session.responseLanguage = d.targetLanguage;
+          session.userExplicitLanguage = d.targetLanguage;
+        }
         if (d.activeEvidence && d.activeEvidence.length > 0 && session.activeEvidence.length === 0) {
           session.activeEvidence = this.sanitizeEvidence(d.activeEvidence);
         }
@@ -135,6 +139,13 @@ class ConversationManager {
     const detectedResult = LanguageDetector.detect(trimmed);
     const detectedLang = detectedResult?.detectedLanguage || session.inputLanguage || 'en';
     session.inputLanguage = detectedLang;
+
+    // Resolve target response language:
+    // 1. Explicit user selection (if user chose language in UI)
+    // 2. Detected input language if non-English (e.g. Urdu, Spanish, Indonesian, Arabic)
+    // 3. Current session response language or default 'en'
+    const targetLang = session.userExplicitLanguage || (detectedLang !== 'en' ? detectedLang : (session.responseLanguage || 'en'));
+    session.responseLanguage = targetLang;
 
     // Detect intent with context
     const intentResult = IntentDetector.detect(trimmed, options.requestedMode, {

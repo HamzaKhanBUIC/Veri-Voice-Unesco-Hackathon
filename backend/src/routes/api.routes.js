@@ -70,6 +70,15 @@ router.post('/api/verify', async (req, res) => {
       clientContext = validation.data;
     }
 
+    // Capture direct targetLanguage parameter if supplied
+    if (req.body.targetLanguage && typeof req.body.targetLanguage === 'string') {
+      if (!clientContext) {
+        clientContext = { targetLanguage: req.body.targetLanguage };
+      } else {
+        clientContext.targetLanguage = req.body.targetLanguage;
+      }
+    }
+
     // 1. Process Input Audio if Base64 provided
     let sttMs = 0;
     let transcriptText = userClaimText;

@@ -23,10 +23,17 @@
     --border-color: #2A2A2A;
   }
 
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     background-color: var(--bg-base);
     color: #FBF9F3;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.011em;
+    text-rendering: optimizeLegibility;
   }
 
   /* Material Symbols styling */

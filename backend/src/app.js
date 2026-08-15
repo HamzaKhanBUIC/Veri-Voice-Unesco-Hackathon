@@ -24,9 +24,10 @@ app.use('/', healthRoutes);
 app.use('/', whatsappRoutes);
 app.use('/', apiRoutes);
 
-// SPA fallback for HTML page requests (e.g. /talk, /chat, /methodology)
+// SPA fallback for HTML page requests on client-side routes (e.g. /talk, /chat, /methodology)
+const SPA_ROUTES = ['/', '/talk', '/chat', '/methodology'];
 app.get('*', (req, res, next) => {
-  if (req.accepts('html')) {
+  if (SPA_ROUTES.includes(req.path) && req.accepts('html')) {
     const indexPath = path.join(__dirname, '../public/index.html');
     if (fs.existsSync(indexPath)) {
       return res.sendFile(indexPath);

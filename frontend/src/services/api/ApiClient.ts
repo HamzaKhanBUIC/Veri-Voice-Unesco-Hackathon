@@ -32,6 +32,7 @@ class ApiClient {
     audioBase64?: string;
     fileExt?: string;
     mode?: 'VERIFICATION' | 'GENERAL_RESEARCH';
+    targetLanguage?: string;
     context?: ConversationContext;
   }): Promise<VerifyResponse> {
     const payload: {
@@ -39,6 +40,7 @@ class ApiClient {
       audioBase64?: string;
       fileExt?: string;
       mode?: string;
+      targetLanguage?: string;
       context?: ConversationContext;
     } = {};
 
@@ -55,12 +57,23 @@ class ApiClient {
       payload.mode = params.mode;
     }
 
+    if (params.targetLanguage) {
+      payload.targetLanguage = params.targetLanguage;
+    }
+
     if (params.context) {
-      payload.context = params.context;
+      payload.context = {
+        ...params.context,
+        targetLanguage: params.targetLanguage || params.context.targetLanguage,
+      };
+    } else if (params.targetLanguage) {
+      payload.context = {
+        targetLanguage: params.targetLanguage,
+      };
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for cold starts
 
     try {
       const response = await fetch(`${this.baseUrl}/api/verify`, {

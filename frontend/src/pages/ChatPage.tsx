@@ -14,11 +14,13 @@ interface ChatPageProps {
 
 export const ChatPage: React.FC<ChatPageProps> = ({
   initialClaim = '',
+  currentLanguage,
   onNavigate,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState(initialClaim);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('Analyzing claim & querying databases...');
   const [selectedDomain, setSelectedDomain] = useState<DomainCategory>('ALL');
   const [activeEvidence, setActiveEvidence] = useState<ChatMessage | null>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -43,10 +45,23 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
   const sampleClaims = [
     'Polio drops are safe and essential for children',
-    'Garlic cures coronavirus infection',
-    'Is climate change caused by human activity?',
-    'What foods help support immune health?',
+    'کیا پولیو کے قطرے بچوں کے لیے محفوظ ہیں؟',
+    '¿Las vacunas causan autismo?',
+    'Apakah bawang putih menyembuhkan virus corona?',
+    'What causes dengue fever and how is it treated?',
   ];
+
+  // Dynamic warm-up status timer when query takes > 3s
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (isLoading) {
+      setLoadingStatus('Analyzing claim & searching authoritative databases...');
+      timer = setTimeout(() => {
+        setLoadingStatus('⚡ Server is warming up... Verifying citations & grounding verdict.');
+      }, 3500);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,7 +89,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await apiClient.verifyClaim({ claimText: textToSubmit.trim() });
+      const response = await apiClient.verifyClaim({
+        claimText: textToSubmit.trim(),
+        targetLanguage: currentLanguage,
+        context: {
+          targetLanguage: currentLanguage,
+        },
+      });
 
       const assistantMsg: ChatMessage = {
         id: `res_${Date.now()}`,
@@ -131,6 +152,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
           const response = await apiClient.verifyClaim({
             audioBase64: base64,
             fileExt: 'webm',
+            targetLanguage: currentLanguage,
+            context: {
+              targetLanguage: currentLanguage,
+              voiceMode: true,
+            },
           });
 
           const assistantMsg: ChatMessage = {
@@ -314,14 +340,14 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
           {/* Loading Indicator */}
           {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-surface-elevated border border-border-subtle rounded-xl p-5 max-w-md space-y-3">
-                <div className="flex items-center gap-2 text-brand-teal-bright text-xs font-mono">
+            <div className="flex justify-start animate-fade-up">
+              <div className="bg-surface-elevated/90 backdrop-blur-md border border-border-subtle rounded-2xl p-5 max-w-md space-y-3 shadow-lg">
+                <div className="flex items-center gap-2.5 text-brand-teal-bright text-xs font-mono">
                   <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                  <span>Scanning authoritative databases & grounding...</span>
+                  <span>{loadingStatus}</span>
                 </div>
-                <div className="w-full h-1 bg-surface-base rounded-full overflow-hidden">
-                  <div className="h-full bg-brand-teal-bright animate-pulse w-2/3 rounded-full" />
+                <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-brand-teal to-brand-teal-bright animate-pulse w-3/4 rounded-full" />
                 </div>
               </div>
             </div>

@@ -13,6 +13,8 @@ export const App: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [selectedClaim, setSelectedClaim] = useState<string>('');
   const [systemStatus, setSystemStatus] = useState<'online' | 'checking' | 'warning' | 'offline'>('checking');
+  const [dismissWarmupBanner, setDismissWarmupBanner] = useState(false);
+  const [showWarmupNotice, setShowWarmupNotice] = useState(false);
 
   // Set HTML dir attribute when language changes (RTL for Urdu/Arabic)
   useEffect(() => {
@@ -24,19 +26,31 @@ export const App: React.FC = () => {
 
   // Ping backend /health on initial mount to wake up Render instance
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     const checkBackend = async () => {
+      setSystemStatus('checking');
+      timer = setTimeout(() => {
+        setShowWarmupNotice(true);
+      }, 1500);
+
       const health = await apiClient.checkHealth();
+      clearTimeout(timer);
       if (health && health.status === 'ok') {
         setSystemStatus('online');
+        setShowWarmupNotice(false);
       } else {
         setSystemStatus('offline');
+        setShowWarmupNotice(false);
       }
     };
     checkBackend();
 
     // Check periodically every 60s
     const interval = setInterval(checkBackend, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -53,6 +67,31 @@ export const App: React.FC = () => {
         systemStatus={systemStatus}
       />
 
+      {/* Dynamic Server Warm-Up Toast / Banner */}
+      {showWarmupNotice && !dismissWarmupBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40 bg-brand-navy-deep/95 backdrop-blur-xl border-b border-brand-teal/30 px-4 py-2.5 text-xs font-mono text-text-primary shadow-xl animate-fade-up">
+          <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-brand-teal-bright animate-ping" />
+              <span className="text-brand-teal-bright font-semibold">Engine Warming Up:</span>
+              <span className="text-text-secondary hidden sm:inline">
+                Cloud verification instance is waking up from standby (~15s on cold start). Verification & voice tools will be ready momentarily.
+              </span>
+              <span className="text-text-secondary sm:hidden">
+                Cloud instance waking up (~15s)...
+              </span>
+            </div>
+            <button
+              onClick={() => setDismissWarmupBanner(true)}
+              className="p-1 hover:bg-surface-container rounded-lg text-text-muted hover:text-text-primary transition-colors"
+              aria-label="Dismiss banner"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Router */}
       <main className="flex-1 pt-16 flex flex-col">
         {activeView === 'landing' && (
@@ -61,6 +100,7 @@ export const App: React.FC = () => {
               setActiveView(view);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            currentLanguage={currentLanguage}
             onSelectSampleClaim={(claim) => {
               setSelectedClaim(claim);
               setActiveView('chat');

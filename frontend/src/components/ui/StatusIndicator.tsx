@@ -13,33 +13,38 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 }) => {
   const configs = {
     online: {
-      dot: 'bg-verdict-true shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+      dot: 'bg-verdict-true',
+      ring: 'bg-verdict-true/30 animate-pulse',
       text: 'text-text-secondary',
-      defaultLabel: 'All Systems Operational',
+      defaultLabel: 'Engine Online',
     },
     checking: {
-      dot: 'bg-brand-teal-bright animate-ping',
+      dot: 'bg-brand-teal-bright',
+      ring: 'bg-brand-teal-bright/40 animate-ping',
       text: 'text-brand-teal-bright',
-      defaultLabel: 'Checking Evidence...',
+      defaultLabel: 'Warming Up...',
     },
     warning: {
-      dot: 'bg-verdict-mixed shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+      dot: 'bg-verdict-mixed',
+      ring: 'bg-verdict-mixed/30 animate-pulse',
       text: 'text-verdict-mixed',
-      defaultLabel: 'High Traffic / Queue Active',
+      defaultLabel: 'High Load',
     },
     offline: {
       dot: 'bg-verdict-false',
-      text: 'text-verdict-false',
-      defaultLabel: 'Backend Waking Up...',
+      ring: 'bg-verdict-false/20',
+      text: 'text-text-muted',
+      defaultLabel: 'Standby / Waking...',
     },
   }[status];
 
   return (
-    <div className={`inline-flex items-center gap-2 text-xs font-mono select-none ${className}`}>
-      <span className="relative flex h-2 w-2">
-        <span className={`relative inline-flex rounded-full h-2 w-2 ${configs.dot}`} />
+    <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container/60 border border-border-subtle text-xs font-mono select-none backdrop-blur-sm ${className}`}>
+      <span className="relative flex h-2 w-2 items-center justify-center">
+        <span className={`absolute inline-flex h-full w-full rounded-full ${configs.ring}`} />
+        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${configs.dot}`} />
       </span>
-      <span className={configs.text}>{label || configs.defaultLabel}</span>
+      <span className={`text-[11px] font-medium ${configs.text}`}>{label || configs.defaultLabel}</span>
     </div>
   );
 };
