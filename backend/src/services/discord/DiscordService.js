@@ -224,10 +224,16 @@ class DiscordService {
                              process.env.NODE_ENV === 'test' ||
                              pipelineResult.isStub);
 
+      let sourceCitations = '';
+      if (pipelineResult.sources && pipelineResult.sources.length > 0) {
+        sourceCitations = '\n\n**Sources:**\n' + pipelineResult.sources.slice(0, 2).map((s) => `• [${s.organization || s.sourceTitle || 'Official Source'}](${s.url || 'https://who.int'})`).join('\n');
+      }
+
       let replyText = `🎙️ **${headerTitle}**\n\n` +
                         `**${transcriptLabel}**: "${pipelineResult.transcript}"${captionAddon}\n` +
                         `**${verdictLabel}**: ${verdictBadge}\n\n` +
-                        `**${explanationLabel}**: ${pipelineResult.responseText}`;
+                        `**${explanationLabel}**: ${pipelineResult.responseText}` +
+                        sourceCitations;
 
       if (!hasValidAudio) {
         replyText += `\n\n🔊 *Spoken audio response is currently unavailable.*`;

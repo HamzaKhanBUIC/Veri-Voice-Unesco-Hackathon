@@ -33,24 +33,33 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
   const [statusMessage, setStatusMessage] = useState(!isServerReady ? t.serverNotice.pleaseWait : t.talk.tapToSpeak);
 
-  // Multi-Turn Conversational Session State
-  const [sessionId, setSessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
+  // Persistent Multi-Turn Conversational Session Ref (Guarantees zero closure staleness)
+  const sessionContextRef = useRef<ConversationContext>({
+    sessionId: `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    turnCount: 0,
+    history: [],
+    activeEvidence: [],
+    activeClaim: '',
+    targetLanguage: currentLanguage || 'en',
+    voiceMode: true,
+  });
+
+  // UI Mirror State
   const [turnCount, setTurnCount] = useState<number>(0);
-  const [history, setHistory] = useState<ConversationTurn[]>([]);
-  const [activeEvidence, setActiveEvidence] = useState<EvidenceItem[]>([]);
-  const [activeClaim, setActiveClaim] = useState<string>('');
   const [responseLanguage, setResponseLanguage] = useState<string>(currentLanguage || 'en');
+  const [activeEvidence, setActiveEvidence] = useState<EvidenceItem[]>([]);
+
+  // Ref to stop active audio on barge-in / speech start
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Sync language or server readiness changes
   useEffect(() => {
     setResponseLanguage(currentLanguage);
+    sessionContextRef.current.targetLanguage = currentLanguage;
     if (voiceState === 'IDLE') {
       setStatusMessage(!isServerReady ? t.serverNotice.pleaseWait : t.talk.tapToSpeak);
     }
-  }, [currentLanguage, isServerReady]);
-
-  // Ref to stop active audio on barge-in
-  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  }, [currentLanguage, isServerReady, voiceState, t]);
 
   const {
     isRecording,
@@ -67,12 +76,120 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     if (activeAudioRef.current) {
       activeAudioRef.current.pause();
       activeAudioRef.current.currentTime = 0;
+      activeAudioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
   }, []);
 
+  // Auto-play spoken response immediately when received (Live Call Experience)
+  const autoPlaySpokenResponse = useCallback((response: VerifyResponse, targetLang: string) => {
+    stopActiveAudioPlayback();
+
+    const rawUrl = response.audioUrl;
+    const cleanText = (response.explanation || '').replace(/<[^>]*>/g, '').replace(/[*_#`[\]()]/g, '').trim();
+    const effectiveLang = response.conversation?.responseLanguage || targetLang || 'ur';
+
+    const ttsUrl = rawUrl
+      ? apiClient.resolveAudioUrl(rawUrl)
+      : `/api/tts?text=${encodeURIComponent(cleanText.substring(0, 250))}&lang=${effectiveLang}`;
+
+    if (!ttsUrl) {
+      setVoiceState('IDLE');
+      return;
+    }
+
+    try {
+      const audio = new Audio(ttsUrl);
+      activeAudioRef.current = audio;
+
+      audio.onplay = () => {
+        setVoiceState('RESPONDING');
+        setStatusMessage('Speaking response...');
+      };
+
+      audio.onended = () => {
+        activeAudioRef.current = null;
+        setVoiceState('IDLE');
+        setStatusMessage('Tap to speak follow-up');
+      };
+
+      const configureFemaleVoice = (utterance: SpeechSynthesisUtterance) => {
+        utterance.lang = effectiveLang === 'ur' ? 'ur-PK' : effectiveLang === 'es' ? 'es-ES' : effectiveLang === 'id' ? 'id-ID' : 'en-US';
+        utterance.pitch = 1.08;
+        utterance.rate = 0.95;
+
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const code = (effectiveLang || 'en').toLowerCase().split('-')[0];
+            const matching = voices.filter((v) => v.lang.toLowerCase().startsWith(code));
+            const femaleRegex = /(female|woman|uzma|gul|zira|samantha|victoria|karen|swara|elvira|gadis|denise|katja|francisca|emel|zariyah|sabina|paulina|helena|eva|jenny|aria|sonia)/i;
+            const femaleVoice = matching.find((v) => femaleRegex.test(v.name)) ||
+                                voices.find((v) => femaleRegex.test(v.name) && v.lang.toLowerCase().startsWith(code)) ||
+                                matching[0] ||
+                                voices.find((v) => femaleRegex.test(v.name));
+            if (femaleVoice) {
+              utterance.voice = femaleVoice;
+            }
+          }
+        }
+      };
+
+      audio.onerror = () => {
+        console.warn('Audio URL stream failed, falling back to Web Speech Synthesis');
+        activeAudioRef.current = null;
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          configureFemaleVoice(utterance);
+          utterance.onstart = () => {
+            setVoiceState('RESPONDING');
+            setStatusMessage('Speaking response...');
+          };
+          utterance.onend = () => {
+            setVoiceState('IDLE');
+            setStatusMessage('Tap to speak follow-up');
+          };
+          utterance.onerror = () => {
+            setVoiceState('IDLE');
+            setStatusMessage(t.talk.tapToSpeak);
+          };
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setVoiceState('IDLE');
+          setStatusMessage(t.talk.tapToSpeak);
+        }
+      };
+
+      audio.play().catch((err) => {
+        console.warn('Auto-play blocked by browser, falling back to Web Speech Synthesis:', err);
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          configureFemaleVoice(utterance);
+          utterance.onstart = () => {
+            setVoiceState('RESPONDING');
+            setStatusMessage('Speaking response...');
+          };
+          utterance.onend = () => {
+            setVoiceState('IDLE');
+            setStatusMessage('Tap to speak follow-up');
+          };
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setVoiceState('IDLE');
+          setStatusMessage(t.talk.tapToSpeak);
+        }
+      });
+    } catch (e) {
+      console.error('Audio playback exception:', e);
+      setVoiceState('IDLE');
+    }
+  }, [stopActiveAudioPlayback, t]);
+
   // Handle Core Click (Start Recording, Stop Recording, or Barge-In)
   const handleCoreClick = async () => {
-    if (turnCount >= 10) {
+    if (sessionContextRef.current.turnCount! >= 10) {
       setStatusMessage('Session limit reached. Refreshing conversation...');
       handleResetSession();
       return;
@@ -90,7 +207,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     }
 
     if (voiceState === 'IDLE' || voiceState === 'ERROR') {
-      // Start fresh recording
+      stopActiveAudioPlayback();
       const success = await startRecording();
       if (success) {
         setVoiceState('LISTENING');
@@ -108,7 +225,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
         return;
       }
 
-      // Submit Audio Base64 with Session Context
+      // Submit Audio Base64 with Full Conversational Session Context
       try {
         setVoiceState('CHECKING');
         setStatusMessage('Grounding evidence across verified repositories...');
@@ -117,15 +234,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
         reader.onloadend = async () => {
           const base64Audio = (reader.result as string).split(',')[1];
           try {
-            const contextPayload: ConversationContext = {
-              sessionId,
-              turnCount,
-              history,
-              activeEvidence,
-              activeClaim,
-              targetLanguage: responseLanguage,
-              voiceMode: true,
-            };
+            const contextPayload = { ...sessionContextRef.current };
 
             const response = await apiClient.verifyClaim({
               audioBase64: base64Audio,
@@ -156,15 +265,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     setTranscriptText(promptText);
 
     try {
-      const contextPayload: ConversationContext = {
-        sessionId,
-        turnCount,
-        history,
-        activeEvidence,
-        activeClaim,
-        targetLanguage: responseLanguage,
-        voiceMode: true,
-      };
+      const contextPayload = { ...sessionContextRef.current };
 
       const response = await apiClient.verifyClaim({
         claimText: promptText,
@@ -183,33 +284,38 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const handleSuccessfulResponse = (response: VerifyResponse) => {
     setCurrentResult(response);
     setTranscriptText(response.userClaim || 'Spoken Query');
-    setVoiceState('RESPONDING');
     setStatusMessage('Verification grounded.');
 
-    // Update Session Context
-    const newTurnCount = response.conversation?.turnCount !== undefined ? response.conversation.turnCount : turnCount + 1;
+    // 1. Update Persistent Session Context Ref for Follow-ups
+    const newTurnCount = (sessionContextRef.current.turnCount || 0) + 1;
+    sessionContextRef.current.turnCount = newTurnCount;
     setTurnCount(newTurnCount);
 
     if (response.conversation?.sessionId) {
-      setSessionId(response.conversation.sessionId);
+      sessionContextRef.current.sessionId = response.conversation.sessionId;
     }
 
-    if (response.conversation?.responseLanguage) {
-      setResponseLanguage(response.conversation.responseLanguage);
-    }
+    const effectiveLang = response.conversation?.responseLanguage || responseLanguage;
+    sessionContextRef.current.targetLanguage = effectiveLang;
+    setResponseLanguage(effectiveLang);
 
-    // Update history
-    setHistory((prev) => [
-      ...prev,
+    // Append turn to history
+    const updatedHistory: ConversationTurn[] = [
+      ...(sessionContextRef.current.history || []),
       { role: 'user' as const, text: response.userClaim },
       { role: 'assistant' as const, text: response.explanation, verdict: response.verdict },
-    ].slice(-8));
+    ].slice(-8);
 
-    // Update active evidence if fresh evidence received
+    sessionContextRef.current.history = updatedHistory;
+    sessionContextRef.current.activeClaim = response.userClaim;
+
     if (response.evidence && response.evidence.length > 0) {
+      sessionContextRef.current.activeEvidence = response.evidence;
       setActiveEvidence(response.evidence);
-      setActiveClaim(response.userClaim);
     }
+
+    // 2. Automatically Play Spoken Response Aloud (Live Call Experience)
+    autoPlaySpokenResponse(response, effectiveLang);
   };
 
   // Reset Session
@@ -219,10 +325,18 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     setCurrentResult(null);
     setTranscriptText('');
     setTurnCount(0);
-    setHistory([]);
     setActiveEvidence([]);
-    setActiveClaim('');
-    setSessionId(`sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
+
+    sessionContextRef.current = {
+      sessionId: `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      turnCount: 0,
+      history: [],
+      activeEvidence: [],
+      activeClaim: '',
+      targetLanguage: currentLanguage || 'en',
+      voiceMode: true,
+    };
+
     setStatusMessage(t.talk.tapToSpeak);
   };
 
@@ -313,11 +427,11 @@ export const TalkPage: React.FC<TalkPageProps> = ({
           </div>
         )}
 
-        {/* Editorial Typography-Led Verdict Statement (No Heavy Box Overload) */}
-        {currentResult && voiceState === 'RESPONDING' && (
-          <div className="w-full text-left space-y-6 pt-4 border-t border-white/[0.08] animate-fade-up">
+        {/* Editorial Typography-Led Verdict Statement Card */}
+        {currentResult && (
+          <div className="w-full text-left space-y-6 p-5 sm:p-6 bg-surface-elevated border border-border-subtle rounded-3xl shadow-xl animate-fade-up">
             {/* Verdict Header Line */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-4">
               <VerdictBadge verdict={currentResult.verdict} size="md" />
               <span className="text-xs font-mono text-text-muted">
                 Confidence: <strong className="text-brand-teal-bright">{currentResult.confidence}</strong>
@@ -335,34 +449,34 @@ export const TalkPage: React.FC<TalkPageProps> = ({
                 audioUrl={apiClient.resolveAudioUrl(currentResult.audioUrl)}
                 spokenText={currentResult.explanation}
                 lang={responseLanguage}
-                autoPlay={true}
+                autoPlay={false}
                 title={`Spoken Verdict (${responseLanguage.toUpperCase()})`}
               />
             )}
 
             {/* Quick Follow-up Prompts */}
-            <div className="flex flex-wrap items-center gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border-subtle">
               <span className="text-[11px] font-mono text-text-muted uppercase">Follow-up:</span>
               <button
                 onClick={() => handleQuickFollowUp('Why is that?')}
-                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
+                className="px-3 py-1.5 bg-surface-container hover:bg-surface-high text-xs font-mono text-text-secondary hover:text-text-primary rounded-xl border border-border-subtle transition-tactile"
               >
                 "Why?"
               </button>
               <button
                 onClick={() => handleQuickFollowUp('What did the primary source say?')}
-                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
+                className="px-3 py-1.5 bg-surface-container hover:bg-surface-high text-xs font-mono text-text-secondary hover:text-text-primary rounded-xl border border-border-subtle transition-tactile"
               >
                 "What did the source say?"
               </button>
               <button
-                onClick={() => handleQuickFollowUp('Ab Urdu mein samjhao')}
+                onClick={() => handleQuickFollowUp('اس کے بارے میں ناسا نے کیا کہا؟')}
                 className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile font-urdu"
               >
-                "اردو میں سمجھائیں"
+                "ناسا نے کیا کہا؟"
               </button>
               <button
-                onClick={() => handleQuickFollowUp('Explain in Spanish')}
+                onClick={() => handleQuickFollowUp('En Español')}
                 className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
               >
                 "En Español"
@@ -391,7 +505,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
                   className="px-4 py-2 bg-brand-teal hover:bg-brand-teal-dim text-white rounded-lg font-medium transition-tactile flex items-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-[16px]">mic</span>
-                  <span>Speak</span>
+                  <span>Speak Follow-up</span>
                 </button>
               </div>
             </div>
@@ -402,7 +516,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
       {/* Bottom Quiet Footer */}
       <div className="w-full py-3 text-xs font-mono text-text-muted border-t border-white/[0.06] flex items-center justify-between">
         <span>Tap core to speak or interrupt</span>
-        <span>Neural EdgeTTS · Groq Whisper</span>
+        <span>ElevenLabs Multilingual v2 · Groq Whisper</span>
       </div>
 
       {/* Slide-out Evidence Rail Drawer */}

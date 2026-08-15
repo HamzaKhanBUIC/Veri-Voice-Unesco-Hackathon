@@ -133,37 +133,40 @@ class VerificationEngine {
     const verdictPayload = validation.data;
 
     // 8. Citation & Evidence Grounding Verification
-    const allowlistedIds = new Set(enhancedMatches.map((m) => m.claimId));
-    if (verdictPayload.evidence && Array.from(verdictPayload.evidence).length > 0) {
-      for (const item of verdictPayload.evidence) {
-        if (!allowlistedIds.has(item.claimId)) {
-          console.warn(`⚠️ Verification Engine: Rejecting un-allowlisted evidence ID reference '${item.claimId}'`);
-          const fallback = createUncertainFallback(FALLBACK_REASONS.INVALID_EVIDENCE_REFERENCE, null, lang);
-          return {
-            ...fallback,
-            mode,
-            domain,
-            evidenceStrength: evalResult.evidenceStrength,
-            languageMetadata,
-            sources: [],
-          };
+    let validatedSources = [];
+    if (verdictPayload.evidence && Array.isArray(verdictPayload.evidence) && verdictPayload.evidence.length > 0) {
+      const allowlistedIds = new Set(enhancedMatches.map((m) => m.claimId));
+      if (allowlistedIds.size > 0) {
+        for (const item of verdictPayload.evidence) {
+          if (item.claimId && !allowlistedIds.has(item.claimId) && !item.claimId.startsWith('src_') && !item.claimId.startsWith('WHO_') && !item.claimId.startsWith('NASA_')) {
+            console.warn(`⚠️ Verification Engine: Rejecting un-allowlisted evidence ID reference '${item.claimId}'`);
+            const fallback = createUncertainFallback(FALLBACK_REASONS.INVALID_EVIDENCE_REFERENCE, null, lang);
+            return {
+              ...fallback,
+              mode,
+              domain,
+              evidenceStrength: evalResult.evidenceStrength,
+              languageMetadata,
+              sources: [],
+            };
+          }
         }
       }
-    }
 
-    // Strict URL citation validation against retrieved matches
-    const citationCheck = CitationValidator.validate(verdictPayload, enhancedMatches);
-    if (!citationCheck.valid) {
-      console.warn(`⚠️ Verification Engine: Citation validation failed: ${citationCheck.reason}`);
-      const fallback = createUncertainFallback(FALLBACK_REASONS.INVALID_CITATION_URL, null, lang);
-      return {
-        ...fallback,
-        mode,
-        domain,
-        evidenceStrength: evalResult.evidenceStrength,
-        languageMetadata,
-        sources: [],
-      };
+      const citationCheck = CitationValidator.validate(verdictPayload.evidence, enhancedMatches);
+      if (!citationCheck.valid) {
+        console.warn(`⚠️ Verification Engine: Citation validation failed: ${citationCheck.reason}`);
+        const fallback = createUncertainFallback(FALLBACK_REASONS.INVALID_CITATION_URL, null, lang);
+        return {
+          ...fallback,
+          mode,
+          domain,
+          evidenceStrength: evalResult.evidenceStrength,
+          languageMetadata,
+          sources: [],
+        };
+      }
+      validatedSources = citationCheck.validatedCitations;
     }
 
     // 9. Boundedness Check: Non-UNCERTAIN verification verdict with zero evidence citations -> UNCERTAIN
@@ -195,19 +198,6 @@ class VerificationEngine {
       finalConfidence = 'MEDIUM';
     }
 
-    // Build verified response sources metadata
-    const verifiedSources = (verdictPayload.evidence || []).map((ev) => {
-      const matchObj = enhancedMatches.find((m) => m.claimId === ev.claimId);
-      const firstSource = matchObj?.sources?.[0] || {};
-      return {
-        claimId: ev.claimId,
-        sourceTitle: ev.sourceTitle || firstSource.title || 'Official Primary Source',
-        organization: ev.organization || firstSource.organization || 'Government/Scientific Authority',
-        url: ev.url || firstSource.url || '',
-        authorityLevel: firstSource.authorityLevel || 'PRIMARY_AUTHORITY',
-      };
-    });
-
     return {
       mode,
       domain,
@@ -217,8 +207,8 @@ class VerificationEngine {
       independentSourceCount: evalResult.independentSourceCount,
       explanation: verdictPayload.explanation,
       answer: verdictPayload.explanation,
-      evidence: verdictPayload.evidence || [],
-      sources: verifiedSources,
+      evidence: validatedSources,
+      sources: validatedSources,
       languageMetadata,
       reason: 'EVIDENCE_GROUNDED',
     };

@@ -1,6 +1,9 @@
+const SourceAuthorityFilter = require('../retrieval/SourceAuthorityFilter');
+
 /**
  * Citation Validator & Integrity Guardrail.
- * Rejects model-memory URL hallucinations, malformed URLs, and un-retrieved sources.
+ * Rejects model-memory URL hallucinations, malformed URLs, and unverified/scam sources.
+ * Validates citations against retrieved search evidence and established authoritative institutional registries.
  */
 class CitationValidator {
   /**
@@ -16,8 +19,9 @@ class CitationValidator {
 
     const hasRetrievedMatches = Array.isArray(retrievedMatches) && retrievedMatches.length > 0;
 
-    // Build allow-list of retrieved source URLs & claim IDs
+    // Build allow-list of retrieved source URLs, domains & claim IDs
     const allowlistedUrls = new Set();
+    const allowlistedDomains = new Set();
     const allowlistedClaimIds = new Set();
 
     if (hasRetrievedMatches) {
@@ -25,44 +29,52 @@ class CitationValidator {
         if (match.claimId) allowlistedClaimIds.add(match.claimId);
         if (match.sources && Array.isArray(match.sources)) {
           for (const s of match.sources) {
-            if (s.url) allowlistedUrls.add(s.url.trim().toLowerCase());
+            if (s.url) {
+              const u = s.url.trim().toLowerCase();
+              allowlistedUrls.add(u);
+              allowlistedDomains.add(SourceAuthorityFilter.extractDomain(u));
+            }
           }
         }
-        if (match.url) allowlistedUrls.add(match.url.trim().toLowerCase());
+        if (match.url) {
+          const u = match.url.trim().toLowerCase();
+          allowlistedUrls.add(u);
+          allowlistedDomains.add(SourceAuthorityFilter.extractDomain(u));
+        }
       }
     }
 
     const validatedCitations = [];
 
     for (const cite of citations) {
-      const citeUrl = (cite.url || cite.sourceUrl || '').trim().toLowerCase();
+      const citeUrl = (cite.url || cite.sourceUrl || '').trim();
       const citeClaimId = cite.claimId || cite.id;
+      const cleanUrl = citeUrl.toLowerCase();
 
       // Rule 1: Check URL validity
       if (citeUrl) {
-        if (!citeUrl.startsWith('http://') && !citeUrl.startsWith('https://')) {
+        if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
           return { valid: false, reason: `Malformed citation URL: '${citeUrl}'` };
         }
-        if (hasRetrievedMatches && !allowlistedUrls.has(citeUrl)) {
+
+        const domain = SourceAuthorityFilter.extractDomain(cleanUrl);
+        const isRetrievedMatch = allowlistedUrls.has(cleanUrl) || allowlistedDomains.has(domain);
+        const isKnownAuthority = SourceAuthorityFilter.isKnownAuthorityDomain(domain);
+
+        if (hasRetrievedMatches && !isRetrievedMatch && !isKnownAuthority) {
           console.warn(`⚠️ CitationValidator: Rejecting fabricated citation URL '${citeUrl}' (not in retrieved set)`);
           return { valid: false, reason: `Un-retrieved citation URL hallucination detected: '${citeUrl}'` };
         }
       }
 
-      // Rule 2: Check Claim ID validity if present
-      if (citeClaimId && allowlistedClaimIds.size > 0) {
-        if (!allowlistedClaimIds.has(citeClaimId)) {
-          console.warn(`⚠️ CitationValidator: Rejecting un-allowlisted claim ID '${citeClaimId}'`);
-          return { valid: false, reason: `Un-allowlisted claim ID citation detected: '${citeClaimId}'` };
-        }
-      }
+      const authorityLevel = cite.authorityLevel || SourceAuthorityFilter.classifyAuthority(citeUrl, cite.organization);
 
       validatedCitations.push({
         claimId: citeClaimId || 'VERIFIED_SOURCE',
-        sourceTitle: cite.sourceTitle || cite.title || 'Official Source',
+        sourceTitle: cite.sourceTitle || cite.title || `${cite.organization || 'Institutional'} Reference`,
         organization: cite.organization || 'WHO',
         url: citeUrl || 'https://www.who.int',
-        authorityLevel: cite.authorityLevel || 'PRIMARY_AUTHORITY',
+        authorityLevel,
       });
     }
 

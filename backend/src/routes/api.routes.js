@@ -176,12 +176,7 @@ router.post('/api/verify', async (req, res) => {
       // Fresh Verification / Retrieval Path
       const retrievalStart = Date.now();
       const retrievalService = new RetrievalService();
-      let retrievalResult = await retrievalService.search(transcriptText);
-
-      if ((!retrievalResult.matches || retrievalResult.matches.length === 0) && stagingEvidence.length > 0) {
-        const stagingService = new RetrievalService({ customDataset: stagingEvidence, minScoreThreshold: 1, enableLiveSearch: true });
-        retrievalResult = await stagingService.search(transcriptText);
-      }
+      const retrievalResult = await retrievalService.search(transcriptText);
       retrievalMatches = retrievalResult.matches || [];
       retrievalMs = Date.now() - retrievalStart;
 
@@ -218,10 +213,13 @@ router.post('/api/verify', async (req, res) => {
     let audioUrl = null;
 
     let ttsProvider;
-    if (process.env.TTS_PROVIDER !== 'mock') {
-      ttsProvider = new EdgeTTSProvider();
-    } else {
+    if (process.env.TTS_PROVIDER === 'mock') {
       ttsProvider = new MockTTSProvider();
+    } else if (process.env.TTS_PROVIDER === 'elevenlabs' || (process.env.ELEVENLABS_API_KEY && !process.env.ELEVENLABS_API_KEY.includes('your_'))) {
+      const ElevenLabsTTSProvider = require('../services/tts/ElevenLabsTTSProvider');
+      ttsProvider = new ElevenLabsTTSProvider();
+    } else {
+      ttsProvider = new EdgeTTSProvider();
     }
 
     try {
@@ -285,6 +283,54 @@ router.post('/api/verify', async (req, res) => {
         // Ignore unlink error
       }
     }
+  }
+});
+
+/**
+ * GET /api/tts
+ * Generates and streams Neural MP3 Audio on-demand for any text and language.
+ */
+router.get('/api/tts', async (req, res) => {
+  const text = req.query.text;
+  const lang = req.query.lang || 'ur';
+
+  if (!text || typeof text !== 'string' || text.trim() === '') {
+    return res.status(400).json({ error: 'Text query parameter is required.' });
+  }
+
+  const outputFilename = `stream_${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
+  const outputPath = path.join(tmpDir, outputFilename);
+
+  try {
+    let ttsProvider;
+    if (process.env.ELEVENLABS_API_KEY && !process.env.ELEVENLABS_API_KEY.includes('your_')) {
+      const ElevenLabsTTSProvider = require('../services/tts/ElevenLabsTTSProvider');
+      ttsProvider = new ElevenLabsTTSProvider();
+    } else {
+      ttsProvider = new EdgeTTSProvider();
+    }
+
+    await ttsProvider.synthesize(text, outputPath, { language: lang });
+
+    if (fs.existsSync(outputPath)) {
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Cache-Control': 'public, max-age=86400',
+        'Accept-Ranges': 'bytes',
+      });
+      const stream = fs.createReadStream(outputPath);
+      stream.pipe(res);
+      stream.on('end', () => {
+        setTimeout(() => {
+          try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch (e) {}
+        }, 10000);
+      });
+    } else {
+      res.status(500).json({ error: 'Audio file generation failed.' });
+    }
+  } catch (err) {
+    console.error('TTS Endpoint Error:', err.message);
+    res.status(500).json({ error: `TTS synthesis failed: ${err.message}` });
   }
 });
 

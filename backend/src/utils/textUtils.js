@@ -1,5 +1,5 @@
 /**
- * Text normalization and keyword tokenization for Urdu and English search queries.
+ * Text normalization and keyword tokenization for multilingual search queries (Urdu, Spanish, Indonesian, English).
  */
 
 // Urdu character normalization map
@@ -44,6 +44,26 @@ function normalizeText(text) {
   return normalized.replace(/\s+/g, ' ').trim();
 }
 
+const RAW_STOPWORDS = [
+  // Urdu Conversational & Question Stopwords
+  'کیا', 'یہ', 'ہے', 'ہوا', 'ہوں', 'ہیں', 'تھا', 'تھی', 'تھے', 'کا', 'کی', 'کے', 'کو',
+  'میں', 'پر', 'سے', 'نے', 'اور', 'یا', 'ان', 'اس', 'کس', 'جو', 'جی', 'بھی', 'نہیں', 'نہی',
+  'نہ', 'ہو', 'ہوتا', 'ہوتی', 'ہوتے', 'کرتا', 'کرتی', 'کرتے', 'کرنا', 'کرنے', 'ایک', 'دو',
+  'کہ', 'آپ', 'مجھے', 'بتائیں', 'بتا', 'سکتے', 'سکتا', 'سکتی', 'ہیلو', 'سلام', 'اسلام', 'علیکم', 'والسلام',
+  'بارے', 'معلومات', 'پوچھنا', 'چاہتا', 'چاہتی', 'پتہ', 'کیسے', 'کیوں', 'کون', 'کتنا', 'کتنے',
+
+  // English Stopwords
+  'is', 'are', 'was', 'were', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'does', 'do', 'did', 'not', 'can', 'you', 'tell', 'me', 'about', 'hello', 'hi', 'please', 'know', 'how', 'what', 'why', 'who', 'where', 'when',
+
+  // Spanish Stopwords
+  'el', 'la', 'los', 'las', 'un', 'una', 'es', 'son', 'por', 'para', 'con', 'que', 'como', 'cual', 'donde', 'hola', 'puedes', 'decirme', 'saber',
+
+  // Indonesian Stopwords
+  'yang', 'di', 'dan', 'ini', 'itu', 'dengan', 'untuk', 'pada', 'adalah', 'apakah', 'bisa', 'beri', 'tahu', 'saya', 'halo', 'bagaimana', 'kenapa'
+];
+
+const NORMALIZED_STOPWORDS = new Set(RAW_STOPWORDS.map((s) => normalizeText(s)));
+
 /**
  * Tokenizes text into unique normalized keywords (length > 1).
  * @param {string} text 
@@ -53,19 +73,11 @@ function extractKeywords(text) {
   const normalized = normalizeText(text);
   if (!normalized) return [];
 
-  // Extended Urdu and English stopwords list
-  const stopwords = new Set([
-    'کیا', 'یہ', 'ہے', 'ہوا', 'ہوں', 'ہیں', 'تھا', 'تھی', 'تھے', 'کا', 'کی', 'کے', 'کو',
-    'میں', 'پر', 'سے', 'نے', 'اور', 'یا', 'ان', 'اس', 'کس', 'جو', 'جی', 'بھی', 'نہیں', 'نہی',
-    'نہ', 'ہو', 'ہوتا', 'ہوتی', 'ہوتے', 'کرتا', 'کرتی', 'کرتے', 'کرنا', 'کرنے', 'ایک', 'دو',
-    'is', 'are', 'was', 'were', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'does', 'do', 'did', 'not'
-  ]);
-
   const tokens = normalized.split(' ');
   const keywords = new Set();
 
   for (const token of tokens) {
-    if (token.length > 1 && !stopwords.has(token)) {
+    if (token.length > 1 && !NORMALIZED_STOPWORDS.has(token)) {
       keywords.add(token);
     }
   }

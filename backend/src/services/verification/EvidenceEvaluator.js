@@ -78,12 +78,25 @@ class EvidenceEvaluator {
     let primarySourceCount = 0;
     let secondarySourceCount = 0;
 
+    const isPrimary = (lvl) =>
+      lvl === 'PRIMARY_INSTITUTIONAL' ||
+      lvl === 'PRIMARY_SCIENTIFIC_DATA' ||
+      lvl === 'OFFICIAL_GOVERNMENT' ||
+      lvl === 'PRIMARY_AUTHORITY';
+
+    const isSecondary = (lvl) =>
+      lvl === 'SCIENTIFIC_REVIEW' ||
+      lvl === 'FACT_CHECKING_ORGANIZATION' ||
+      lvl === 'RESEARCH_NETWORK' ||
+      lvl === 'SECONDARY_REPUTABLE' ||
+      lvl === 'SECONDARY_AUTHORITY';
+
     for (const m of deduplicated) {
       if (m.sources && Array.isArray(m.sources)) {
         for (const s of m.sources) {
           if (s.domain) uniqueDomains.add(s.domain);
-          if (s.authorityLevel === 'PRIMARY_AUTHORITY') primarySourceCount++;
-          if (s.authorityLevel === 'SECONDARY_AUTHORITY') secondarySourceCount++;
+          if (isPrimary(s.authorityLevel)) primarySourceCount++;
+          if (isSecondary(s.authorityLevel)) secondarySourceCount++;
         }
       }
       if (m.url) {
@@ -92,7 +105,7 @@ class EvidenceEvaluator {
           uniqueDomains.add(dom);
         } catch (e) {}
       }
-      if (m.authorityLevel === 'PRIMARY_AUTHORITY') primarySourceCount++;
+      if (isPrimary(m.authorityLevel)) primarySourceCount++;
     }
 
     const independentSourceCount = Math.max(deduplicated.length, uniqueDomains.size);

@@ -4,7 +4,7 @@
     "language": "ur",
     "claim": "کیا پولیو کے قطرے بچوں کے لیے نقصان دہ ہیں یا بیماری پیدا کرتے ہیں؟",
     "verdict": "FALSE",
-    "explanation": "پولیو کے قطرے (او پی وی) بچوں کے لیے مکمل طور پر محفوظ اور عمر بھر کی معذوری سے بچاؤ کے لیے ناگزیر ہیں۔ عالمی ادارہ صحت اور اسلامی نظریاتی کونسل نے اس کی حفاظت اور افادیت کی مکمل توثیق کی ہے۔",
+    "explanation": "پولیو کے قطرے (او پی وی) بچوں کے لیے مکمل طور پر محفوظ اور عمر بھر کی معذوری سے بچاؤ کے لیے ناگزیر ہیں۔ عالمی ادارہ صحت (WHO) اور قومی ادارہ صحت پاکستان نے اس کی حفاظت اور افادیت کی مکمل توثیق کی ہے۔",
     "keywords": ["پولیو", "قطرے", "ویکسین", "معذوری", "محفوظ"],
     "sources": [
       {
@@ -13,9 +13,9 @@
         "url": "https://who.int/ur/news-room/fact-sheets/detail/poliomyelitis"
       },
       {
-        "title": "نیشنل کمانڈ اینڈ آپریشن سینٹر (NDMA/NCOC)",
-        "organization": "NDMA",
-        "url": "https://ndma.gov.pk"
+        "title": "قومی ادارہ صحت پاکستان (NIH Islamabad)",
+        "organization": "NIH",
+        "url": "https://nih.org.pk"
       }
     ]
   },
@@ -24,7 +24,7 @@
     "language": "en",
     "claim": "Do polio drops cause illness or are they dangerous for children?",
     "verdict": "FALSE",
-    "explanation": "Polio drops (Oral Polio Vaccine / OPV) are rigorously tested, safe, and essential for protecting children from irreversible paralysis. Over 3 billion children have been immunized globally under WHO supervision.",
+    "explanation": "Polio drops (Oral Polio Vaccine / OPV) are rigorously tested, safe, and essential for protecting children from irreversible paralysis. Over 3 billion children have been immunized globally under WHO and UNICEF supervision.",
     "keywords": ["polio", "vaccine", "drops", "safe", "paralysis", "dangerous"],
     "sources": [
       {
@@ -40,11 +40,171 @@
     ]
   },
   {
+    "id": "claim_earth_shape_ur",
+    "language": "ur",
+    "claim": "کیا زمین گول ہے یا چپٹی ہے؟",
+    "verdict": "TRUE",
+    "explanation": "زمین ایک کروی گولہ ہے۔ ناسا اور بین الاقوامی خلائی ایجنسیوں کی سیٹلائٹ تصاویر، خلائی مشاہدات اور طبعی قوانین اس بات کا غیر متنازعہ سائنسی ثبوت ہیں۔",
+    "keywords": ["زمین", "گول", "چپٹی", "سیارہ", "خلا"],
+    "sources": [
+      {
+        "title": "ناسا ارتھ سائنس اور سیٹلائٹ ڈیٹا",
+        "organization": "NASA",
+        "url": "https://climate.nasa.gov"
+      },
+      {
+        "title": "یورپی خلائی ایجنسی (ESA)",
+        "organization": "ESA",
+        "url": "https://esa.int"
+      }
+    ]
+  },
+  {
+    "id": "claim_earth_shape_en",
+    "language": "en",
+    "claim": "Is the Earth flat or spherical?",
+    "verdict": "TRUE",
+    "explanation": "The Earth is an oblate spheroid. Overwhelming empirical evidence from NASA, ESA satellite telemetry, orbital physics, and global geodetic surveys conclusively prove Earth is spherical.",
+    "keywords": ["earth", "flat", "spherical", "round", "globe", "planet"],
+    "sources": [
+      {
+        "title": "NASA Earth Science & Planetary Observation",
+        "organization": "NASA",
+        "url": "https://climate.nasa.gov"
+      },
+      {
+        "title": "European Space Agency (ESA) Earth Observation",
+        "organization": "ESA",
+        "url": "https://esa.int"
+      }
+    ]
+  },
+  {
+    "id": "claim_climate_hoax_ur",
+    "language": "ur",
+    "claim": "کیا موسمیاتی تبدیلی اور گلوبل وارمنگ ایک جھوٹ ہے؟",
+    "verdict": "FALSE",
+    "explanation": "موسمیاتی تبدیلی اور گلوبل وارمنگ ایک ثابت شدہ سائنسی حقیقت ہے۔ اقوام متحدہ کے ماحولیاتی پینل (IPCC) اور عالمی موسمیاتی تنظیم (WMO) کے ڈیٹا کے مطابق انسانی سرگرمیوں سے عالمی درجہ حرارت میں نمایاں اضافہ ہوا ہے۔",
+    "keywords": ["موسمیاتی", "تبدیلی", "گلوبل", "وارمنگ", "گرمی", "جھوٹ"],
+    "sources": [
+      {
+        "title": "اقوام متحدہ بین الحکومتی پینل برائے موسمیاتی تبدیلی (IPCC)",
+        "organization": "IPCC",
+        "url": "https://ipcc.ch"
+      },
+      {
+        "title": "عالمی موسمیاتی تنظیم (WMO) گلوبل کلائمیٹ رپورٹ",
+        "organization": "WMO",
+        "url": "https://wmo.int"
+      }
+    ]
+  },
+  {
+    "id": "claim_climate_hoax_en",
+    "language": "en",
+    "claim": "Is climate change or global warming a hoax?",
+    "verdict": "FALSE",
+    "explanation": "Anthropogenic climate change is a proven reality supported by over 99% of publishing climate scientists, NASA telemetry, NOAA temperature records, and the UN IPCC Sixth Assessment Report.",
+    "keywords": ["climate", "change", "global", "warming", "hoax", "fake", "temperature"],
+    "sources": [
+      {
+        "title": "Intergovernmental Panel on Climate Change (IPCC)",
+        "organization": "IPCC",
+        "url": "https://ipcc.ch"
+      },
+      {
+        "title": "NOAA National Centers for Environmental Information",
+        "organization": "NOAA",
+        "url": "https://noaa.gov"
+      }
+    ]
+  },
+  {
+    "id": "claim_climate_hoax_es",
+    "language": "es",
+    "claim": "¿El cambio climático es un engaño o es real?",
+    "verdict": "FALSE",
+    "explanation": "El cambio climático es una realidad científica inequívoca. El Panel Intergubernamental sobre el Cambio Climático (IPCC) de la ONU y la OMM confirman que las emisiones humanas calientan la atmósfera y los océanos.",
+    "keywords": ["cambio", "climatico", "engaño", "calentamiento", "global"],
+    "sources": [
+      {
+        "title": "Panel Intergubernamental sobre el Cambio Climático (IPCC)",
+        "organization": "IPCC",
+        "url": "https://ipcc.ch"
+      },
+      {
+        "title": "Organización Meteorológica Mundial (OMM)",
+        "organization": "WMO",
+        "url": "https://wmo.int"
+      }
+    ]
+  },
+  {
+    "id": "claim_climate_hoax_id",
+    "language": "id",
+    "claim": "Apakah perubahan iklim dan pemanasan global hanyalah rekayasa atau hoaks?",
+    "verdict": "FALSE",
+    "explanation": "Perubahan iklim adalah fakta ilmiah yang terbukti secara empiris. Laporan IPCC PBB dan BMKG menegaskan peningkatan suhu global disebabkan oleh emisi gas rumah kaca.",
+    "keywords": ["perubahan", "iklim", "pemanasan", "global", "hoaks", "rekayasa"],
+    "sources": [
+      {
+        "title": "Badan Meteorologi, Klimatologi, dan Geofisika (BMKG)",
+        "organization": "BMKG",
+        "url": "https://bmkg.go.id"
+      },
+      {
+        "title": "IPCC Panel Antarpemerintah tentang Perubahan Iklim",
+        "organization": "IPCC",
+        "url": "https://ipcc.ch"
+      }
+    ]
+  },
+  {
+    "id": "claim_voice_scam_ur",
+    "language": "ur",
+    "claim": "کیا واٹس ایپ پر آنے والی ہنگامی رقم مانگنے والی آوازیں اے آئی سے جعلی بنائی جا سکتی ہیں؟",
+    "verdict": "TRUE",
+    "explanation": "ہاں، مصنوعی ذہانت (AI) کے جدید ٹولز چند سیکنڈ کے آڈیو نمونے سے کسی بھی شخص کی آواز کی ہو بہو نقل بنا سکتے ہیں۔ پی ٹی اے (PTA) اور یونیسکو شہریوں کو مشورہ دیتے ہیں کہ رقم بھیجنے سے پہلے دوسرے ذرائع سے براہ راست تصدیق کریں۔",
+    "keywords": ["واٹس", "ایپ", "آواز", "جعلی", "فراڈ", "پیسے", "اسکیم", "کلوننگ"],
+    "sources": [
+      {
+        "title": "پاکستان ٹیلی کمیونیکیشن اتھارٹی (PTA) سیکیورٹی ایڈوائزری",
+        "organization": "PTA",
+        "url": "https://pta.gov.pk"
+      },
+      {
+        "title": "یونیسکو میڈیا اینڈ انفارمیشن لٹریسی (UNESCO MIL)",
+        "organization": "UNESCO",
+        "url": "https://unesco.org"
+      }
+    ]
+  },
+  {
+    "id": "claim_voice_scam_en",
+    "language": "en",
+    "claim": "Can scammers use AI voice cloning on WhatsApp to impersonate relatives in emergency scams?",
+    "verdict": "TRUE",
+    "explanation": "Yes, generative AI voice cloning can replicate human voices from short audio clips to execute financial extortion scams. UNESCO MIL and cybersecurity authorities advise direct out-of-band verification before transferring money.",
+    "keywords": ["ai", "voice", "cloning", "scam", "whatsapp", "emergency", "impersonation"],
+    "sources": [
+      {
+        "title": "UNESCO Media and Information Literacy (MIL) Framework",
+        "organization": "UNESCO",
+        "url": "https://unesco.org"
+      },
+      {
+        "title": "European Digital Media Observatory (EDMO) AI Brief",
+        "organization": "EDMO",
+        "url": "https://edmo.eu"
+      }
+    ]
+  },
+  {
     "id": "claim_garlic_covid_id",
     "language": "id",
     "claim": "Apakah bawang putih menyembuhkan virus corona?",
     "verdict": "FALSE",
-    "explanation": "Meskipun bawang putih adalah makanan sehat yang memiliki beberapa sifat antimikroba, tidak ada bukti ilmiah bahwa mengonsumsi bawang putih dapat mencegah atau menyembuhkan infeksi virus corona (COVID-19). Organisasi Kesehatan Dunia (WHO) dan Kementerian Kesehatan RI menegaskan pencegahan terbaik adalah vaksinasi, mencuci tangan, dan menjaga sirkulasi udara yang baik.",
+    "explanation": "Meskipun bawang putih adalah makanan sehat dengan khasiat antimikroba, tidak ada bukti ilmiah bahwa bawang putih dapat mencegah atau menyembuhkan infeksi virus corona (COVID-19). Organisasi Kesehatan Dunia (WHO) dan Kemenkes RI menegaskan protokol medis resmi.",
     "keywords": ["bawang", "putih", "menyembuhkan", "virus", "corona", "covid"],
     "sources": [
       {
@@ -64,7 +224,7 @@
     "language": "en",
     "claim": "Can eating garlic prevent or cure coronavirus / COVID-19?",
     "verdict": "FALSE",
-    "explanation": "While garlic is a healthy food with some antimicrobial properties, there is no scientific evidence that eating garlic protects against or cures the coronavirus (COVID-19).",
+    "explanation": "While garlic has antimicrobial properties, there is zero clinical evidence that consuming garlic cures or prevents COVID-19 infection, as confirmed by WHO and CDC.",
     "keywords": ["garlic", "cure", "coronavirus", "covid", "prevent"],
     "sources": [
       {
@@ -84,13 +244,18 @@
     "language": "es",
     "claim": "¿El ajo puede prevenir o curar la infección por coronavirus?",
     "verdict": "FALSE",
-    "explanation": "Aunque el ajo es un alimento saludable con ciertas propiedades antimicrobianas, no existe ninguna evidencia científica de que comer ajo proteja o cure la infección por coronavirus (COVID-19).",
+    "explanation": "Aunque el ajo es un alimento saludable con ciertas propiedades antimicrobianas, la Organización Mundial de la Salud (OMS) y la OPS confirman que no existe evidencia científica de que comer ajo cure el COVID-19.",
     "keywords": ["ajo", "cura", "coronavirus", "covid", "prevenir"],
     "sources": [
       {
         "title": "Organización Mundial de la Salud - Desmitificación sobre el COVID-19",
         "organization": "OMS",
         "url": "https://who.int/es/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters"
+      },
+      {
+        "title": "Organización Panamericana de la Salud (OPS)",
+        "organization": "PAHO",
+        "url": "https://paho.org"
       }
     ]
   },
@@ -115,46 +280,11 @@
     ]
   },
   {
-    "id": "claim_autism_vaccine_es",
-    "language": "es",
-    "claim": "¿Las vacunas infantiles causan autismo?",
-    "verdict": "FALSE",
-    "explanation": "Estudios científicos globales rigurosos con millones de niños han demostrado concluyentemente que no existe ningún vínculo entre las vacunas y el autismo.",
-    "keywords": ["vacunas", "autismo", "causan", "niños"],
-    "sources": [
-      {
-        "title": "Organización Mundial de la Salud - Seguridad de Vacunas",
-        "organization": "OMS",
-        "url": "https://who.int/es/news-room/fact-sheets/detail/vaccines-and-immunization"
-      }
-    ]
-  },
-  {
-    "id": "claim_dengue_symptoms_id",
-    "language": "id",
-    "claim": "Apa penyebab dan gejala utama demam berdarah dengue?",
-    "verdict": "TRUE",
-    "explanation": "Demam Berdarah Dengue (DBD) disebabkan oleh virus Dengue yang ditularkan melalui gigitan nyamuk Aedes aegypti betina. Gejala utamanya meliputi demam tinggi mendadak, nyeri otot dan sendi, sakit kepala parah, dan ruam kulit.",
-    "keywords": ["dengue", "demam", "berdarah", "nyamuk", "gejala", "aedes"],
-    "sources": [
-      {
-        "title": "WHO Fact Sheets - Demam Berdarah Dengue",
-        "organization": "WHO",
-        "url": "https://who.int/news-room/fact-sheets/detail/dengue-and-severe-dengue"
-      },
-      {
-        "title": "Kemenkes RI - Pedoman Pencegahan & Pengendalian DBD",
-        "organization": "Kemenkes RI",
-        "url": "https://kemkes.go.id"
-      }
-    ]
-  },
-  {
     "id": "claim_dengue_symptoms_ur",
     "language": "ur",
     "claim": "ڈینگی بخار کی علامات اور احتیاطی تدابیر کیا ہیں؟",
     "verdict": "TRUE",
-    "explanation": "ڈینگی ایک وائرل بیماری ہے جو مادہ مچھر (ایڈیز) کے کاٹنے سے پھیلتی ہے۔ اس کی نمایاں علامات میں تیز بخار، سر درد، آنکھوں کے پیچھے درد، اور جوڑوں میں شدید تکلیف شامل ہے۔ پانی جمع نہ ہونے دینا اس کے بچاؤ کا بہترین طریقہ ہے۔",
+    "explanation": "ڈینگی ایک وائرل بیماری ہے جو مادہ مچھر (ایڈیز) کے کاٹنے سے پھیلتی ہے۔ اس کی نمایاں علامات میں تیز بخار، سر درد، آنکھوں کے پیچھے درد اور جوڑوں میں درد شامل ہیں۔ کھڑے پانی کا خاتمہ بچاؤ کا بنیادی طریقہ ہے۔",
     "keywords": ["ڈینگی", "بخار", "مچھر", "علامات", "احتیاط"],
     "sources": [
       {

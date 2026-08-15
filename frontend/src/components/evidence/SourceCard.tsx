@@ -25,14 +25,55 @@ export const SourceCard: React.FC<SourceCardProps> = ({
 
   const domain = getDomain(evidence.url);
 
-  const isPrimary =
-    evidence.authorityLevel === 'PRIMARY_AUTHORITY' ||
-    domain.includes('who.int') ||
-    domain.includes('nasa.gov') ||
-    domain.includes('cdc.gov') ||
-    domain.includes('usgs.gov') ||
-    domain.includes('wmo.int') ||
-    domain.includes('ndma.gov.pk');
+  // Authority badge configuration
+  const getAuthorityBadge = (level?: string) => {
+    switch (level) {
+      case 'PRIMARY_INSTITUTIONAL':
+      case 'PRIMARY_AUTHORITY':
+        return { label: 'Primary Institutional', cls: 'text-brand-teal-bright bg-brand-teal/20 border-brand-teal/30' };
+      case 'PRIMARY_SCIENTIFIC_DATA':
+        return { label: 'Scientific Data', cls: 'text-cyan-300 bg-cyan-950/40 border-cyan-500/30' };
+      case 'OFFICIAL_GOVERNMENT':
+        return { label: 'Official Government', cls: 'text-emerald-300 bg-emerald-950/40 border-emerald-500/30' };
+      case 'SCIENTIFIC_REVIEW':
+        return { label: 'Scientific Review', cls: 'text-sky-300 bg-sky-950/40 border-sky-500/30' };
+      case 'FACT_CHECKING_ORGANIZATION':
+      case 'REPUTABLE_NEWS':
+        return { label: 'Fact-Checking Network', cls: 'text-amber-300 bg-amber-950/40 border-amber-500/30' };
+      case 'RESEARCH_NETWORK':
+        return { label: 'Research Observatory', cls: 'text-indigo-300 bg-indigo-950/40 border-indigo-500/30' };
+      case 'CITIZEN_SCIENCE':
+        return { label: 'Citizen Science', cls: 'text-lime-300 bg-lime-950/40 border-lime-500/30' };
+      case 'SECONDARY_REPUTABLE':
+      case 'SECONDARY_AUTHORITY':
+        return { label: 'Academic Journal', cls: 'text-blue-300 bg-blue-950/40 border-blue-500/30' };
+      default:
+        if (domain.includes('who.int') || domain.includes('wmo.int') || domain.includes('unesco.org')) {
+          return { label: 'Primary Institutional', cls: 'text-brand-teal-bright bg-brand-teal/20 border-brand-teal/30' };
+        }
+        if (domain.includes('nasa.gov') || domain.includes('noaa.gov') || domain.includes('usgs.gov')) {
+          return { label: 'Scientific Data', cls: 'text-cyan-300 bg-cyan-950/40 border-cyan-500/30' };
+        }
+        if (domain.includes('cdc.gov') || domain.includes('ndma.gov.pk') || domain.includes('kemkes.go.id')) {
+          return { label: 'Official Government', cls: 'text-emerald-300 bg-emerald-950/40 border-emerald-500/30' };
+        }
+        if (domain.includes('climatefeedback.org')) {
+          return { label: 'Scientific Review', cls: 'text-sky-300 bg-sky-950/40 border-sky-500/30' };
+        }
+        if (domain.includes('edmo.eu')) {
+          return { label: 'Research Observatory', cls: 'text-indigo-300 bg-indigo-950/40 border-indigo-500/30' };
+        }
+        if (domain.includes('factcheck.afp.com')) {
+          return { label: 'Fact-Checking Network', cls: 'text-amber-300 bg-amber-950/40 border-amber-500/30' };
+        }
+        if (domain.includes('inaturalist.org')) {
+          return { label: 'Citizen Science', cls: 'text-lime-300 bg-lime-950/40 border-lime-500/30' };
+        }
+        return { label: 'Web Source', cls: 'text-text-muted bg-white/[0.03] border-white/[0.08]' };
+    }
+  };
+
+  const badge = getAuthorityBadge(evidence.authorityLevel);
 
   return (
     <div className="py-3.5 border-b border-white/[0.06] text-left flex flex-col gap-2 group">
@@ -44,13 +85,9 @@ export const SourceCard: React.FC<SourceCardProps> = ({
           </span>
         </div>
         <span
-          className={`text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded ${
-            isPrimary
-              ? 'text-brand-teal-bright bg-brand-teal/20 border border-brand-teal/30 font-semibold'
-              : 'text-text-muted bg-white/[0.03]'
-          }`}
+          className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge.cls}`}
         >
-          {isPrimary ? 'Primary Authority' : 'Web Source'}
+          {badge.label}
         </span>
       </div>
 

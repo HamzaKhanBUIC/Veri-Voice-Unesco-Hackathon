@@ -141,10 +141,12 @@ class ConversationManager {
     session.inputLanguage = detectedLang;
 
     // Resolve target response language:
-    // 1. Explicit user selection (if user chose language in UI)
-    // 2. Detected input language if non-English (e.g. Urdu, Spanish, Indonesian, Arabic)
-    // 3. Current session response language or default 'en'
-    const targetLang = session.userExplicitLanguage || (detectedLang !== 'en' ? detectedLang : (session.responseLanguage || 'en'));
+    // When the user speaks or writes in a specific language (e.g. Urdu, Spanish, Indonesian),
+    // ALWAYS respond in that natural language.
+    let targetLang = detectedLang;
+    if (detectedLang === 'en') {
+      targetLang = session.userExplicitLanguage || session.responseLanguage || 'en';
+    }
     session.responseLanguage = targetLang;
 
     // Detect intent with context

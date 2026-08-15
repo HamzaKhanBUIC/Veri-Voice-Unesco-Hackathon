@@ -55,19 +55,21 @@ describe('Citation Integrity & Source Authority Classification Unit Tests', () =
   });
 
   describe('Source Authority Classification', () => {
-    it('should classify WHO domain as PRIMARY_AUTHORITY', () => {
+    it('should classify WHO domain as PRIMARY_INSTITUTIONAL', () => {
       const auth = SourceAuthorityFilter.classifyAuthority('https://www.who.int/health-topics', 'World Health Organization');
-      expect(auth).toBe('PRIMARY_AUTHORITY');
+      expect(auth).toBe('PRIMARY_INSTITUTIONAL');
+      expect(SourceAuthorityFilter.isPrimaryTier(auth)).toBe(true);
     });
 
-    it('should classify PAHO domain as PRIMARY_AUTHORITY', () => {
+    it('should classify PAHO domain as PRIMARY_INSTITUTIONAL', () => {
       const auth = SourceAuthorityFilter.classifyAuthority('https://www.paho.org/en/topics', 'PAHO');
-      expect(auth).toBe('PRIMARY_AUTHORITY');
+      expect(auth).toBe('PRIMARY_INSTITUTIONAL');
+      expect(SourceAuthorityFilter.isPrimaryTier(auth)).toBe(true);
     });
 
-    it('should classify Reuters as REPUTABLE_NEWS', () => {
+    it('should classify Reuters as FACT_CHECKING_ORGANIZATION', () => {
       const auth = SourceAuthorityFilter.classifyAuthority('https://www.reuters.com/world/news', 'Reuters');
-      expect(auth).toBe('REPUTABLE_NEWS');
+      expect(auth).toBe('FACT_CHECKING_ORGANIZATION');
     });
 
     it('should classify unknown blog domain as GENERAL_WEB', () => {

@@ -64,6 +64,7 @@ export interface TranslationSchema {
     domainScience: string;
     domainClimate: string;
     domainDisaster: string;
+    domainAi: string;
   };
   serverNotice: {
     wakingTitle: string;
@@ -156,8 +157,9 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainAll: 'All Domains',
       domainHealth: 'Health & Medicine',
       domainScience: 'Science & Astronomy',
-      domainClimate: 'Climate & Weather',
+      domainClimate: 'Climate & Atmosphere',
       domainDisaster: 'Disaster Warnings',
+      domainAi: 'AI & Deepfakes',
     },
     serverNotice: {
       wakingTitle: 'Cloud Engine Waking Up',
@@ -252,8 +254,9 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainAll: 'تمام شعبے',
       domainHealth: 'صحت اور ادویات',
       domainScience: 'سائنس اور کائنات',
-      domainClimate: 'موسمیات و ماحولیات',
+      domainClimate: 'موسمیات و فضا',
       domainDisaster: 'آفات کی انتباہ',
+      domainAi: 'مصنوعی ذہانت اور ڈیپ فیک',
     },
     serverNotice: {
       wakingTitle: 'کلاؤڈ سرور شروع ہو رہا ہے',
@@ -348,8 +351,9 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainAll: 'Todos los Dominios',
       domainHealth: 'Salud y Medicina',
       domainScience: 'Ciencia y Naturaleza',
-      domainClimate: 'Clima y Medio Ambiente',
+      domainClimate: 'Clima y Atmósfera',
       domainDisaster: 'Alertas de Desastres',
+      domainAi: 'IA y Desinformación',
     },
     serverNotice: {
       wakingTitle: 'Servidor en la Nube Iniciándose',
@@ -444,8 +448,9 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainAll: 'Semua Domain',
       domainHealth: 'Kesehatan & Medis',
       domainScience: 'Sains & Alam',
-      domainClimate: 'Iklim & Cuaca',
+      domainClimate: 'Iklim & Atmosfer',
       domainDisaster: 'Peringatan Bencana',
+      domainAi: 'AI & Disinformasi',
     },
     serverNotice: {
       wakingTitle: 'Server Cloud Sedang Memuat',

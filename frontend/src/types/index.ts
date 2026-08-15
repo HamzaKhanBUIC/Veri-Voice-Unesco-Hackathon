@@ -15,6 +15,14 @@ export type EvidenceStrength =
   | 'INFRASTRUCTURE_FAILURE';
 
 export type AuthorityLevel =
+  | 'PRIMARY_INSTITUTIONAL'
+  | 'PRIMARY_SCIENTIFIC_DATA'
+  | 'OFFICIAL_GOVERNMENT'
+  | 'SCIENTIFIC_REVIEW'
+  | 'FACT_CHECKING_ORGANIZATION'
+  | 'RESEARCH_NETWORK'
+  | 'SECONDARY_REPUTABLE'
+  | 'CITIZEN_SCIENCE'
   | 'PRIMARY_AUTHORITY'
   | 'SECONDARY_AUTHORITY'
   | 'REPUTABLE_NEWS'
@@ -87,7 +95,17 @@ export type VoiceState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'CHECKING' | 'RES
 
 export type AppView = 'landing' | 'talk' | 'chat' | 'methodology';
 
-export type DomainCategory = 'ALL' | 'HEALTH' | 'EARTH_SPACE' | 'WEATHER_CLIMATE' | 'DISASTER' | 'SCIENCE' | 'EDUCATION';
+export type DomainCategory =
+  | 'ALL'
+  | 'HEALTH'
+  | 'WEATHER_CLIMATE'
+  | 'AI_DISINFORMATION'
+  | 'SCIENCE'
+  | 'EARTH_SPACE'
+  | 'DISASTER'
+  | 'BIODIVERSITY'
+  | 'EDUCATION'
+  | 'GENERAL';
 
 export interface LanguageOption {
   code: string;

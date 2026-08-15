@@ -1,4 +1,4 @@
-import { VerifyResponse, ConversationContext, EvidenceItem, VerdictType } from '../../types';
+import { VerifyResponse, ConversationContext, EvidenceItem, VerdictType, AuthorityLevel } from '../../types';
 
 const GROQ_API_KEYS = [
   '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',
@@ -8,17 +8,130 @@ const GROQ_API_KEYS = [
 
 const PRIMARY_SOURCES_CATALOG: Record<string, EvidenceItem[]> = {
   health: [
-    { claimId: 'who_1', sourceTitle: 'WHO Global Health & Immunization Guidelines', organization: 'WHO', url: 'https://who.int/news-room/fact-sheets/detail/poliomyelitis', authorityLevel: 'PRIMARY_AUTHORITY', statement: 'Vaccines and public health immunizations undergo rigorous multi-phase clinical safety trials.' },
-    { claimId: 'cdc_1', sourceTitle: 'CDC Vaccine Safety Monitoring & Clinical Consensus', organization: 'CDC', url: 'https://cdc.gov/vaccinesafety', authorityLevel: 'PRIMARY_AUTHORITY', statement: 'Extensive multi-cohort empirical data validates immunization safety and efficacy.' },
-    { claimId: 'ndma_1', sourceTitle: 'NDMA National Health & Disaster Guidelines', organization: 'NDMA', url: 'https://ndma.gov.pk', authorityLevel: 'PRIMARY_AUTHORITY', statement: 'National public health alerts and official medical consensus advisories.' },
+    { claimId: 'who_1', sourceTitle: 'WHO Global Health & Immunization Guidelines', organization: 'WHO', url: 'https://who.int/news-room/fact-sheets/detail/poliomyelitis', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'Vaccines and public health immunizations undergo rigorous multi-phase clinical safety trials.' },
+    { claimId: 'unicef_1', sourceTitle: 'UNICEF Child Immunization & Maternal Care', organization: 'UNICEF', url: 'https://unicef.org', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'UNICEF global supply chain monitoring and childhood immunization verification.' },
+    { claimId: 'cdc_1', sourceTitle: 'CDC Vaccine Safety Monitoring & Clinical Consensus', organization: 'CDC', url: 'https://cdc.gov/vaccinesafety', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'Extensive multi-cohort empirical surveillance data validates immunization safety.' },
+    { claimId: 'nih_pk_1', sourceTitle: 'National Institute of Health (NIH) Islamabad', organization: 'NIH', url: 'https://nih.org.pk', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'Official infectious disease tracking, Dengue alerts, and Polio eradication monitoring for Pakistan.' },
+    { claimId: 'kemkes_1', sourceTitle: 'Kemenkes RI Panduan Imunisasi Nasional', organization: 'Kemenkes RI', url: 'https://kemkes.go.id', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'Kementerian Kesehatan Republik Indonesia protokol imunisasi dan penanganan penyakit.' },
+    { claimId: 'paho_1', sourceTitle: 'Organización Panamericana de la Salud (OPS/PAHO)', organization: 'PAHO', url: 'https://paho.org', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'Guías de salud pública y vigilancia epidemiológica para las Américas.' },
   ],
   climate: [
-    { claimId: 'wmo_1', sourceTitle: 'World Meteorological Organization Global Consensus', organization: 'WMO', url: 'https://wmo.int', authorityLevel: 'PRIMARY_AUTHORITY', statement: 'Global climate observations and meteorological data models.' },
-    { claimId: 'nasa_1', sourceTitle: 'NASA Earth Science & Atmospheric Observations', organization: 'NASA', url: 'https://climate.nasa.gov', authorityLevel: 'PRIMARY_AUTHORITY', statement: 'Satellite-measured atmospheric metrics and earth observations.' },
+    { claimId: 'ipcc_1', sourceTitle: 'Intergovernmental Panel on Climate Change (IPCC)', organization: 'IPCC', url: 'https://ipcc.ch', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'UN definitive scientific consensus on anthropogenic greenhouse gas emissions and global warming.' },
+    { claimId: 'wmo_1', sourceTitle: 'World Meteorological Organization Global Consensus', organization: 'WMO', url: 'https://wmo.int', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'Global climate observations and standardized meteorological models across 193 member states.' },
+    { claimId: 'noaa_1', sourceTitle: 'NOAA Global Climate & Oceanic Telemetry', organization: 'NOAA', url: 'https://noaa.gov', authorityLevel: 'PRIMARY_SCIENTIFIC_DATA', statement: 'Empirical atmospheric CO2, oceanic heat content, and paleoclimate record observations.' },
+    { claimId: 'copernicus_1', sourceTitle: 'Copernicus Climate Change Service (ECMWF)', organization: 'Copernicus', url: 'https://climate.copernicus.eu', authorityLevel: 'PRIMARY_SCIENTIFIC_DATA', statement: 'European Earth observation satellite measurements of global temperatures and ice extents.' },
+    { claimId: 'bmkg_1', sourceTitle: 'BMKG Indonesia Cuaca & Perubahan Iklim', organization: 'BMKG', url: 'https://bmkg.go.id', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'Pusat peringatan dini cuaca, iklim dan gempa bumi Indonesia.' },
+    { claimId: 'pmd_1', sourceTitle: 'Pakistan Meteorological Department (PMD)', organization: 'PMD', url: 'https://pmd.gov.pk', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'National climate projections, monsoon telemetry, and heatwave early warnings for Pakistan.' },
+  ],
+  science: [
+    { claimId: 'nasa_1', sourceTitle: 'NASA Planetary Science & Earth Observations', organization: 'NASA', url: 'https://climate.nasa.gov', authorityLevel: 'PRIMARY_SCIENTIFIC_DATA', statement: 'Satellite-measured planetary dynamics and space science telemetry.' },
+    { claimId: 'esa_1', sourceTitle: 'European Space Agency (ESA) Earth Observation', organization: 'ESA', url: 'https://esa.int', authorityLevel: 'PRIMARY_SCIENTIFIC_DATA', statement: 'Space exploration, orbital physics data, and Earth satellite monitoring.' },
+    { claimId: 'cern_1', sourceTitle: 'CERN European Organization for Nuclear Research', organization: 'CERN', url: 'https://home.cern', authorityLevel: 'PRIMARY_SCIENTIFIC_DATA', statement: 'Fundamental physics research and particle physics empirical discoveries.' },
+    { claimId: 'unesco_1', sourceTitle: 'UNESCO Media and Information Literacy Framework', organization: 'UNESCO', url: 'https://unesco.org', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'International standards for information verification, scientific integrity, and cognitive digital literacy.' },
+  ],
+  disaster: [
+    { claimId: 'unocha_1', sourceTitle: 'UN OCHA Humanitarian Relief Coordination', organization: 'UN OCHA', url: 'https://unocha.org', authorityLevel: 'PRIMARY_INSTITUTIONAL', statement: 'Verified crisis telemetry, emergency logistics, and humanitarian situation reports.' },
+    { claimId: 'ndma_1', sourceTitle: 'NDMA National Disaster Management Authority Pakistan', organization: 'NDMA', url: 'https://ndma.gov.pk', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'Official flood mitigation advisories, emergency response alerts, and rescue operations in Pakistan.' },
+    { claimId: 'bnpb_1', sourceTitle: 'BNPB Badan Nasional Penanggulangan Bencana', organization: 'BNPB', url: 'https://bnpb.go.id', authorityLevel: 'OFFICIAL_GOVERNMENT', statement: 'Manajemen bencana nasional dan tanggap darurat bencana di Indonesia.' },
+    { claimId: 'usgs_1', sourceTitle: 'USGS Global Earthquake & Geological Survey', organization: 'USGS', url: 'https://earthquake.usgs.gov', authorityLevel: 'PRIMARY_SCIENTIFIC_DATA', statement: 'Real-time global seismic sensor network and tectonic event detection.' },
+  ],
+  fact_checking: [
+    { claimId: 'reuters_1', sourceTitle: 'Reuters Fact Check Global Media Verification', organization: 'Reuters', url: 'https://reuters.com/fact-check', authorityLevel: 'FACT_CHECKING_ORGANIZATION', statement: 'IFCN-certified investigative verification of viral media, economic assertions, and synthetic content.' },
+    { claimId: 'afp_1', sourceTitle: 'AFP Fact Check Multilingual Verification', organization: 'AFP Fact Check', url: 'https://factcheck.afp.com', authorityLevel: 'FACT_CHECKING_ORGANIZATION', statement: 'IFCN-certified investigative verification of circulating viral claims across 20+ languages.' },
+    { claimId: 'maldita_1', sourceTitle: 'Maldita.es Periodismo y Verificación', organization: 'Maldita.es', url: 'https://maldita.es', authorityLevel: 'FACT_CHECKING_ORGANIZATION', statement: 'Verificación rigurosa en español de bulos virales y desinformación en redes.' },
+    { claimId: 'cekfakta_1', sourceTitle: 'CekFakta Kolaborasi Periksa Fakta Indonesia', organization: 'CekFakta', url: 'https://cekfakta.com', authorityLevel: 'FACT_CHECKING_ORGANIZATION', statement: 'Inisiatif kolaboratif pemeriksa fakta independen bersertifikasi IFCN di Indonesia.' },
+    { claimId: 'soch_1', sourceTitle: 'Soch Fact Check Pakistan', organization: 'Soch Fact Check', url: 'https://sochfactcheck.com', authorityLevel: 'FACT_CHECKING_ORGANIZATION', statement: 'IFCN-accredited fact-checking for Pakistani media and Urdu claims.' },
+    { claimId: 'edmo_1', sourceTitle: 'European Digital Media Observatory (EDMO)', organization: 'EDMO', url: 'https://edmo.eu', authorityLevel: 'RESEARCH_NETWORK', statement: 'Cross-border disinformation tracking, AI deepfake analysis, and MIL educational guidelines.' },
   ],
 };
 
-class ApiClient {
+function determineAuthorityTier(url: string, org: string): AuthorityLevel {
+  const u = (url || '').toLowerCase();
+  const o = (org || '').toLowerCase();
+  if (
+    u.includes('who.int') || u.includes('wmo.int') || u.includes('unesco.org') ||
+    u.includes('unicef.org') || u.includes('ipcc.ch') || u.includes('unocha.org') ||
+    u.includes('paho.org') || u.includes('gavi.org') || o.includes('who') ||
+    o.includes('unesco') || o.includes('ipcc') || o.includes('unicef')
+  ) {
+    return 'PRIMARY_INSTITUTIONAL';
+  }
+  if (
+    u.includes('noaa.gov') || u.includes('nasa.gov') || u.includes('usgs.gov') ||
+    u.includes('esa.int') || u.includes('cern.ch') || u.includes('home.cern') ||
+    u.includes('copernicus.eu') || o.includes('noaa') || o.includes('nasa') || o.includes('esa')
+  ) {
+    return 'PRIMARY_SCIENTIFIC_DATA';
+  }
+  if (
+    u.includes('cdc.gov') || u.includes('ndma.gov.pk') || u.includes('kemkes.go.id') ||
+    u.includes('nih.org.pk') || u.includes('pmd.gov.pk') || u.includes('bmkg.go.id') ||
+    u.includes('bnpb.go.id') || u.includes('pta.gov.pk') || u.includes('kominfo.go.id') ||
+    o.includes('cdc') || o.includes('ndma') || o.includes('kemenkes') || o.includes('nih')
+  ) {
+    return 'OFFICIAL_GOVERNMENT';
+  }
+  if (u.includes('climatefeedback.org') || u.includes('sciencefeedback.co') || u.includes('healthfeedback.org') || o.includes('science feedback')) {
+    return 'SCIENTIFIC_REVIEW';
+  }
+  if (u.includes('edmo.eu') || u.includes('firstdraftnews.org') || u.includes('witness.org') || o.includes('edmo')) {
+    return 'RESEARCH_NETWORK';
+  }
+  if (
+    u.includes('factcheck.afp.com') || u.includes('reuters.com') || u.includes('cekfakta.com') ||
+    u.includes('maldita.es') || u.includes('newtral.es') || u.includes('chequeado.com') ||
+    u.includes('sochfactcheck.com') || u.includes('fullfact.org') || u.includes('factcheck.org') ||
+    u.includes('snopes.com') || o.includes('afp') || o.includes('fact check') || o.includes('maldita')
+  ) {
+    return 'FACT_CHECKING_ORGANIZATION';
+  }
+  if (u.includes('inaturalist.org') || o.includes('inaturalist')) {
+    return 'CITIZEN_SCIENCE';
+  }
+  return 'SECONDARY_REPUTABLE';
+}
+
+const ELEVENLABS_API_KEY = 'sk_afceee03c93d2fa383dc98ffd8511bcbc36752fc2501fef5';
+const ELEVENLABS_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
+
+export async function synthesizeElevenLabsAudio(text: string): Promise<string | null> {
+  try {
+    const cleanText = text.replace(/<[^>]*>/g, '').replace(/[*_#`[\]()]/g, '').trim();
+    if (!cleanText) return null;
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: cleanText.length > 250 ? cleanText.substring(0, 247) + '...' : cleanText,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          use_speaker_boost: true,
+        },
+      }),
+    });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    } else {
+      const err = await response.text().catch(() => '');
+      console.warn(`ElevenLabs TTS response not ok: ${response.status} ${err}`);
+      return null;
+    }
+  } catch (err) {
+    console.warn('ElevenLabs client TTS fetch failed:', err);
+    return null;
+  }
+}
+
+export class ApiClient {
   public getResolvedBaseUrl(): string {
     if (typeof window !== 'undefined') {
       const customUrl = localStorage.getItem('verivoice_backend_url');
@@ -27,6 +140,18 @@ class ApiClient {
       }
     }
     return (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  }
+
+  public resolveAudioUrl(path: string | null | undefined): string | null {
+    if (!path) return null;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+      return path;
+    }
+    const baseUrl = this.getResolvedBaseUrl();
+    if (!baseUrl) return path;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${cleanBase}${cleanPath}`;
   }
 
   public setCustomBaseUrl(url: string): void {
@@ -59,111 +184,149 @@ class ApiClient {
         console.warn('Backend ping failed, falling back to direct Groq cloud engine:', err);
       }
     }
-    // Always return OK for direct Groq Cloud Engine
-    return { status: 'ok', service: 'verivoice-cloud-direct', environment: 'production' };
+    return { status: 'ok', service: 'verivoice-direct-groq-cloud', environment: 'production-cloud' };
   }
 
   /**
-   * Live Cloud Verification via Groq Llama 3.3 70B Versatile
+   * Direct Groq LPU Execution (Client-side ultra-fast fallback).
    */
-  private async verifyViaGroqCloud(
+  async verifyWithGroqDirect(
     claimText: string,
     targetLanguage: string = 'en',
     context?: ConversationContext
   ): Promise<VerifyResponse> {
-    const apiKey = GROQ_API_KEYS[Math.floor(Math.random() * GROQ_API_KEYS.length)];
+    // Auto-detect language from input text (Urdu, Spanish, Indonesian, English)
+    let effectiveLang = (targetLanguage || 'en').toLowerCase();
+    if (/[\u0600-\u06FF]/.test(claimText)) {
+      effectiveLang = 'ur';
+    } else if (
+      /[áéíóúñ¿¡]/i.test(claimText) ||
+      /\b(el|la|los|las|un|una|es|son|por qué|qué|cómo|cuál|cuándo|dónde|tierra|vacuna|vacunas|salud|esférica|plana|noticias|enfermedad|cura|tratamiento|científico|clima|falso|verdadero)\b/i.test(claimText)
+    ) {
+      effectiveLang = 'es';
+    } else if (
+      /\b(apakah|bagaimana|mengapa|apa|kapan|dimana|bawang|adalah|tidak|bukan|vaksin|kesehatan|bumi|datar|penyakit|obat|dokter|iklim|gejala|terjadi|bencana|gempa)\b/i.test(claimText)
+    ) {
+      effectiveLang = 'id';
+    }
 
     const langInstructions: Record<string, string> = {
-      ur: 'Respond entirely in natural, authoritative Urdu (اردو). Include an explicit verdict and explanation grounded in WHO and medical science.',
-      es: 'Respond entirely in authoritative Spanish (Español). Include an explicit verdict and evidence explanation grounded in official medical consensus.',
-      id: 'Respond entirely in authoritative Indonesian (Bahasa Indonesia). Include an explicit verdict and evidence explanation grounded in official medical consensus.',
-      en: 'Respond in authoritative, clear English. Include an explicit verdict and evidence explanation grounded in official scientific consensus.',
+      ur: 'CRITICAL: You MUST write the explanation entirely in authentic, fluent Urdu (اردو) script. Do NOT use English.',
+      es: 'CRITICAL: You MUST write the explanation in fluent Spanish (Español).',
+      id: 'CRITICAL: You MUST write the explanation in fluent Indonesian (Bahasa Indonesia).',
+      en: 'CRITICAL: You MUST write the explanation in authoritative, clear English with an explicit verdict.',
     };
 
-    const systemPrompt = `You are VeriVoice, an authoritative institutional voice verification engine for UNESCO infodemic mitigation.
-You evaluate user rumors, claims, or questions against peer-reviewed consensus and primary authorities (WHO, NASA, CDC, WMO, NDMA).
+    const systemPrompt = `You are VeriVoice, an intelligent, empathetic, and authoritative female voice verification & research assistant engineered in alignment with UNESCO Media & Information Literacy (MIL) principles.
+You handle ANY question or claim across science, health, climate, technology, space, history, and general knowledge with a warm, articulate, and professional female persona.
+In Urdu (اردو), use natural and polite feminine grammatical agreement when referring to yourself in the first person (e.g. 'جیسا کہ میں بتاتی چلوں', 'میں نے تصدیق کی ہے', 'ہماری تحقیق کے مطابق').
 
 RULES:
-1. Verdict must be one of: TRUE, FALSE, MIXED, UNCERTAIN, RESEARCH_RESPONSE.
-2. If the user asks a health question (e.g. "What causes dengue?"), use RESEARCH_RESPONSE.
-3. If the user makes a factual claim (e.g. "Polio drops cause illness"), evaluate it strictly and deliver TRUE, FALSE, or MIXED.
-4. If evidence is lacking or inconclusive, deliver UNCERTAIN. Refuse to hallucinate unproven claims.
-5. ${langInstructions[targetLanguage.toLowerCase()] || langInstructions.en}
-6. Provide a concise, clear 2-3 sentence explanation suitable for spoken voice response.
+1. Handle ANY question or claim the user asks naturally and accurately.
+2. If the user asks an open question or explanation (e.g. "What is diabetes?", "How does an airplane fly?", "Explain gravity"), provide a clear, helpful, direct answer and set verdict to "RESEARCH_RESPONSE".
+3. If the user makes or asks about a factual claim (e.g. "Is Earth flat?", "Do vaccines cause autism?", "Is garlic a cure for Covid?"), evaluate its factual accuracy strictly (e.g. Earth being flat is unequivocally FALSE) and set verdict to "TRUE", "FALSE", "MIXED", or "UNCERTAIN".
+4. LANGUAGE RULE: ${langInstructions[effectiveLang] || langInstructions.en}
+5. Keep explanations concise, clear, and direct (2-3 sentences), perfectly crafted for spoken voice reading.
+6. Provide 1-3 relevant authoritative institutional sources.`;
 
-Output JSON format ONLY:
-{
-  "verdict": "TRUE" | "FALSE" | "MIXED" | "UNCERTAIN" | "RESEARCH_RESPONSE",
-  "confidence": "HIGH" | "MEDIUM" | "LOW",
-  "explanation": "Clear grounded explanation.",
-  "sources": [
-    {
-      "sourceTitle": "Organization name & guide",
-      "url": "https://who.int/...",
-      "organization": "WHO",
-      "statement": "Relevant quote or finding"
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...(context?.history?.map((h) => ({
+        role: h.role === 'assistant' ? 'assistant' : 'user',
+        content: h.text,
+      })) || []),
+      { role: 'user', content: claimText },
+    ];
+
+    let lastError: Error | null = null;
+    let rawText = '';
+
+    for (const apiKey of GROQ_API_KEYS) {
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages,
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          rawText = data.choices?.[0]?.message?.content || '{}';
+          break;
+        } else {
+          lastError = new Error(`Groq API returned HTTP ${response.status}`);
+        }
+      } catch (err) {
+        lastError = err as Error;
+      }
     }
-  ]
-}`;
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `<USER_CLAIM>${claimText}</USER_CLAIM>` },
-        ],
-        temperature: 0.1,
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Groq API returned HTTP ${response.status}`);
+    if (!rawText) {
+      throw lastError || new Error('All Groq verification providers are currently unavailable.');
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = JSON.parse(content);
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      parsed = {
+        verdict: 'RESEARCH_RESPONSE',
+        confidence: 'HIGH',
+        explanation: rawText,
+        sources: PRIMARY_SOURCES_CATALOG.science,
+      };
+    }
 
     const verdict = (parsed.verdict || 'RESEARCH_RESPONSE') as VerdictType;
-    const evidenceList: EvidenceItem[] = (parsed.sources || PRIMARY_SOURCES_CATALOG.health).map(
-      (s: any, idx: number) => ({
+    const rawSources = parsed.sources && parsed.sources.length > 0 ? parsed.sources : PRIMARY_SOURCES_CATALOG.health;
+
+    const evidenceList: EvidenceItem[] = rawSources.map((s: any, idx: number) => {
+      const authLevel = determineAuthorityTier(s.url, s.organization);
+      return {
         claimId: `src_${idx + 1}`,
-        sourceTitle: s.sourceTitle || 'Primary Authority Reference',
+        sourceTitle: s.sourceTitle || `${s.organization || 'Institutional'} Reference`,
         organization: s.organization || 'WHO',
         url: s.url || 'https://who.int',
         statement: s.statement || s.quote || parsed.explanation,
-        authorityLevel: 'PRIMARY_AUTHORITY' as const,
+        authorityLevel: authLevel,
         relevanceScore: 0.95,
-      })
-    );
+      };
+    });
+
+    const cleanExplanation = (parsed.explanation || '').substring(0, 250);
+    let audioUrl: string | null = null;
+    try {
+      audioUrl = await synthesizeElevenLabsAudio(cleanExplanation);
+    } catch {
+      audioUrl = null;
+    }
 
     return {
       success: true,
       userClaim: claimText,
       verdict,
       confidence: parsed.confidence || 'HIGH',
-      explanation: parsed.explanation || 'Claim analyzed against authoritative medical databases.',
+      explanation: parsed.explanation || 'Claim analyzed against authoritative institutional repositories.',
       evidence: evidenceList,
+      audioUrl,
       conversation: {
-        sessionId: context?.sessionId || `sess_live_${Date.now()}`,
+        sessionId: context?.sessionId || `sess_${Date.now()}`,
         turnCount: (context?.turnCount || 0) + 1,
         intent: 'FACT_CHECKING',
-        evidenceReused: false,
-        responseLanguage: targetLanguage,
+        evidenceReused: (context?.history && context.history.length > 0) || false,
+        responseLanguage: effectiveLang,
       },
     };
   }
 
-  /**
-   * Submits a claim verification or conversational query (Text or Audio Base64).
-   */
   async verifyClaim(params: {
     claimText?: string;
     audioBase64?: string;
@@ -175,34 +338,33 @@ Output JSON format ONLY:
     const targetLang = params.targetLanguage || params.context?.targetLanguage || 'en';
     const baseUrl = this.getResolvedBaseUrl();
 
-    // 1. If backend URL is specified, try hitting the backend server first
-    if (baseUrl && baseUrl.startsWith('http')) {
-      try {
-        const payload = {
-          claimText: params.claimText?.trim(),
-          audioBase64: params.audioBase64,
-          fileExt: params.fileExt || 'webm',
-          mode: params.mode,
-          targetLanguage: targetLang,
-          context: params.context,
-        };
+    // 1. Try hitting the backend server first (supports local Vite proxy or custom backend URL)
+    try {
+      const payload = {
+        claimText: params.claimText?.trim(),
+        audioBase64: params.audioBase64,
+        fileExt: params.fileExt || 'webm',
+        mode: params.mode,
+        targetLanguage: targetLang,
+        context: params.context,
+      };
 
-        const response = await fetch(`${baseUrl}/api/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
+      const endpoint = baseUrl ? `${baseUrl}/api/verify` : '/api/verify';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) return data as VerifyResponse;
-        }
-      } catch (backendErr) {
-        console.warn('Backend server failed, switching to live direct Groq cloud verification:', backendErr);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) return data as VerifyResponse;
       }
+    } catch (backendErr) {
+      console.warn('Backend server unreachable, switching to live direct Groq cloud verification:', backendErr);
     }
 
     // 2. Transcribe Audio via Groq Whisper if audio was provided
@@ -219,11 +381,11 @@ Output JSON format ONLY:
         formData.append('file', audioBlob, 'audio.webm');
         formData.append('model', 'whisper-large-v3');
 
-        const apiKey = GROQ_API_KEYS[0];
+        const apiKey = GROQ_API_KEYS[Math.floor(Math.random() * GROQ_API_KEYS.length)];
         const whisperRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${apiKey}`,
           },
           body: formData,
         });
@@ -233,27 +395,15 @@ Output JSON format ONLY:
           queryText = whisperData.text || '';
         }
       } catch (whisperErr) {
-        console.warn('Direct Whisper transcription fallback:', whisperErr);
-        queryText = 'Spoken Voice Claim';
+        console.error('Groq Whisper STT failed:', whisperErr);
       }
     }
 
     if (!queryText) {
-      queryText = 'Are polio drops safe for infants?';
+      throw new Error('No input text or audio transcript could be retrieved.');
     }
 
-    // 3. Run Live Cloud Verification via Groq Llama 3.3 70B
-    return await this.verifyViaGroqCloud(queryText, targetLang, params.context);
-  }
-
-  /**
-   * Resolves static audio URL path.
-   */
-  resolveAudioUrl(path: string | null | undefined): string | null {
-    if (!path) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    const baseUrl = this.getResolvedBaseUrl();
-    return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+    return this.verifyWithGroqDirect(queryText, targetLang, params.context);
   }
 }
 

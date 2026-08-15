@@ -1,91 +1,95 @@
 const { validateAudioFile } = require('../../utils/audioUtils');
-const MockSpeechProvider = require('../speech/MockSpeechProvider');
-const MockTTSProvider = require('../tts/MockTTSProvider');
-const VerificationStub = require('../verification/VerificationStub');
-const RetrievalService = require('../retrieval/retrievalService');
-const VerificationEngine = require('../verification/verificationEngine');
 const path = require('path');
+const fs = require('fs');
+const WhisperProvider = require('../speech/WhisperProvider');
+const SpeechmaticsProvider = require('../speech/SpeechmaticsProvider');
+const MockSpeechProvider = require('../speech/MockSpeechProvider');
+const VerificationEngine = require('../verification/verificationEngine');
+const RetrievalService = require('../retrieval/retrievalService');
+const EdgeTTSProvider = require('../tts/EdgeTTSProvider');
 
 /**
- * Standalone Audio Processing Pipeline Orchestrator.
- * Encapsulates AUDIO -> STT -> TRANSCRIPT -> RETRIEVAL -> VERIFICATION -> RESPONSE TEXT -> TTS -> OUTPUT AUDIO.
+ * Standalone Audio Processing Pipeline.
+ * Orchestrates full lifecycle: STT -> Language Detection -> Retrieval -> Verification -> TTS.
+ * Can run independently in CLI, Tests, WhatsApp, Discord, or Web without external framework lock-in.
  */
 class StandalonePipeline {
   constructor(options = {}) {
-    this.speechProvider = options.speechProvider || new MockSpeechProvider();
-    this.ttsProvider = options.ttsProvider || new MockTTSProvider();
-    this.verificationStub = options.verificationStub || null;
-    this.verificationEngine = options.verificationEngine || (options.verificationStub ? null : new VerificationEngine());
+    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+
+    // Prioritize Groq Whisper for fast multi-language ASR (Urdu, Spanish, Indonesian, English, etc.)
+    const defaultSpeech = (process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY) && !isTestEnv
+      ? new WhisperProvider()
+      : (process.env.SPEECHMATICS_API_KEY && !isTestEnv ? new SpeechmaticsProvider() : new MockSpeechProvider());
+
+    this.speechProvider = options.speechProvider || defaultSpeech;
+    this.verificationEngine = options.verificationEngine || new VerificationEngine();
     this.retrievalService = options.retrievalService || new RetrievalService();
-    this.process = this.processAudio.bind(this);
+    this.ttsProvider = options.ttsProvider || new EdgeTTSProvider();
+    this.verificationStub = options.verificationStub || null;
   }
 
   /**
-   * Runs end-to-end audio processing pipeline.
-   * @param {string} inputAudioPath - Path to input voice file (.ogg, .mp3, .wav)
-   * @param {string} [outputAudioPath] - Optional custom path for output audio file
-   * @param {object} [options] - Options including requestId and captionText
-   * @returns {Promise<object>} Pipeline execution result and performance report
+   * Processes an incoming audio file through the complete pipeline.
+   * @param {string} inputAudioPath - Path to input voice file (.ogg, .wav, .mp3, etc.)
+   * @param {string} [outputAudioPath] - Optional custom path for synthesized response audio
+   * @param {object} [options] - Options passed to verification / STT
+   * @returns {Promise<object>} Complete verification result with timing metrics
    */
-  async processAudio(inputAudioPath, outputAudioPath, options = {}) {
+  async processAudio(inputAudioPath, outputAudioPath = null, options = {}) {
     const startTime = Date.now();
-    const requestId = options.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const requestId = options.requestId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // Step 0: Validate input audio file
+    // Generate safe default output path if not provided
+    const tmpDir = path.resolve(process.cwd(), 'tmp');
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    const defaultOutputPath = outputAudioPath || path.join(tmpDir, `pipeline_res_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.mp3`);
+
+    // Step 0: Input Audio Validation
     const validation = validateAudioFile(inputAudioPath);
     if (!validation.valid) {
-      throw new Error(`Pipeline audio validation failed: ${validation.error}`);
+      throw new Error(`StandalonePipeline: Pipeline audio validation failed: ${validation.error}`);
     }
-
-    const defaultOutputPath =
-      outputAudioPath ||
-      path.join(path.dirname(validation.details.path), `output_${Date.now()}.mp3`);
 
     // Step 1: Speech-To-Text Transcription
+    // Use WhisperProvider when available for reliable multilingual ASR
+    const sttEngine = (this.speechProvider.name === 'WhisperProvider' || process.env.GROQ_API_KEY)
+      ? (this.speechProvider.name === 'WhisperProvider' ? this.speechProvider : new WhisperProvider())
+      : this.speechProvider;
+
     const sttStart = Date.now();
-    let sttResult = null;
-
-    // Use WhisperProvider as the primary ASR engine when GROQ_API_KEY is available (fastest multi-language ASR)
-    const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
-    if (apiKey && !apiKey.includes('your_') && apiKey !== 'placeholder') {
-      try {
-        const WhisperProvider = require('../speech/WhisperProvider');
-        const whisper = new WhisperProvider(apiKey);
-        sttResult = await whisper.transcribe(validation.details.path, { language: null });
-      } catch (err) {
-        console.warn(`⚠️ [${requestId}] Groq Whisper ASR failed: ${err.message}. Switching to secondary ASR provider...`);
-      }
+    let sttResult;
+    try {
+      sttResult = await sttEngine.transcribe(inputAudioPath, options);
+    } catch (sttErr) {
+      console.warn(`⚠️ [${requestId}] StandalonePipeline: Primary STT failed (${sttErr.message}). Attempting fallback STT...`);
+      sttResult = await this.speechProvider.transcribe(inputAudioPath, options);
     }
-
-    // Fallback to configured secondary STT provider (e.g. Speechmatics or MockSpeech)
-    if (!sttResult || !sttResult.text || sttResult.text.trim() === '') {
-      if (this.speechProvider) {
-        try {
-          sttResult = await this.speechProvider.transcribe(validation.details.path, { language: 'auto' });
-        } catch (err) {
-          console.warn(`⚠️ [${requestId}] Secondary STT provider failed: ${err.message}`);
-        }
-      }
-    }
-
     const sttMs = Date.now() - sttStart;
 
-    if (!sttResult || typeof sttResult.text !== 'string' || sttResult.text.trim() === '') {
-      throw new Error('Pipeline error: STT provider returned invalid result structure.');
+    if (!sttResult || !sttResult.text || sttResult.text.trim() === '') {
+      throw new Error('StandalonePipeline: Transcription resulted in empty text.');
     }
 
+    // Step 2: Verification Engine & Knowledge Retrieval
+    const verifStart = Date.now();
     let responseText = '';
     let verdict = 'UNCERTAIN';
-    let confidence = 0;
-    let isStub = false;
+    let confidence = 'LOW';
     let detectedLang = 'ur';
-    const verifStart = Date.now();
+    let domain = 'GENERAL';
+    let sources = [];
+    let evidence = [];
+    let isStub = false;
 
-    // Step 2: Verification (Engine or Stub)
     if (this.verificationStub) {
-      const verifResult = await this.verificationStub.process(sttResult);
+      const verifResult = await this.verificationStub.process(sttResult.text || sttResult);
       responseText = verifResult.responseText;
       isStub = verifResult.isStub || false;
+      verdict = verifResult.verdict || 'UNCERTAIN';
+      confidence = verifResult.confidence || 'LOW';
     } else {
       let matches = [];
       let searchStatus = 'SEARCH_SUCCESS';
@@ -101,6 +105,9 @@ class StandalonePipeline {
       responseText = verifPayload.explanation;
       verdict = verifPayload.verdict;
       confidence = verifPayload.confidence;
+      domain = verifPayload.domain || 'GENERAL';
+      sources = verifPayload.sources || [];
+      evidence = verifPayload.evidence || [];
       detectedLang = verifPayload.languageMetadata?.detectedLanguage || 'ur';
     }
     const verifMs = Date.now() - verifStart;
@@ -137,6 +144,9 @@ class StandalonePipeline {
       language: detectedLang,
       verdict,
       confidence,
+      domain,
+      sources,
+      evidence,
       responseText,
       isStub,
       timing: {

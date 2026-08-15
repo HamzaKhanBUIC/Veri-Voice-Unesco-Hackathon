@@ -1,8 +1,10 @@
 /**
  * Domain Detector Service.
- * Identifies the subject domain of a user input (HEALTH, EARTH_SPACE, WEATHER_CLIMATE, GEOLOGY, DISASTER, TECHNOLOGY, ECONOMICS, LAW_POLICY, SCIENCE, EDUCATION, HISTORY, GENERAL).
+ * Identifies the subject domain of user text:
+ * HEALTH, EARTH_SPACE, WEATHER_CLIMATE, GEOLOGY, DISASTER, TECHNOLOGY, ECONOMICS,
+ * LAW_POLICY, SCIENCE, EDUCATION, MEDIA_INFORMATION_LITERACY, AI_DISINFORMATION,
+ * BIODIVERSITY, HISTORY, GENERAL.
  * Returns { domain, confidence, signals }.
- * Fallback to GENERAL when detection confidence is low.
  */
 
 const DOMAINS = {
@@ -16,6 +18,9 @@ const DOMAINS = {
   LAW_POLICY: 'LAW_POLICY',
   SCIENCE: 'SCIENCE',
   EDUCATION: 'EDUCATION',
+  MEDIA_INFORMATION_LITERACY: 'MEDIA_INFORMATION_LITERACY',
+  AI_DISINFORMATION: 'AI_DISINFORMATION',
+  BIODIVERSITY: 'BIODIVERSITY',
   HISTORY: 'HISTORY',
   GENERAL: 'GENERAL',
 };
@@ -27,17 +32,35 @@ const DOMAIN_PATTERNS = {
     /(salud|vacuna|enfermedad|virus|medicina|síntoma|tratamiento)/i,
     /(vaksin|penyakit|obat|kesehatan|dokter|gejala)/i,
   ],
+  AI_DISINFORMATION: [
+    /\b(deepfake|deepfakes|disinformation|misinformation|malinformation|fake news|hallucination|generative ai|botnet|synthetic media|ai generated|propaganda|edmo|fact check)\b/i,
+    /(جعلی خبر|پروپیگنڈا|ڈیپ فیک|جھوٹی خبر|مصنوعی میڈیا)/i,
+    /(desinformación|noticias falsas|deepfake|inteligencia artificial falsa)/i,
+    /(hoaks|disinformasi|misinformasi|deepfake|berita bohong)/i,
+  ],
+  MEDIA_INFORMATION_LITERACY: [
+    /\b(media literacy|information literacy|mil|unesco|fact checking|source verification|critical thinking|cognitive pause|reverse image search)\b/i,
+    /(میڈیا خواندگی|معلوماتی خواندگی|تصدیق|یونیسکو)/i,
+    /(alfabetización mediática|verificación de fuentes|pensamiento crítico)/i,
+    /(literasi media|literasi informasi|cek fakta|verifikasi sumber)/i,
+  ],
+  WEATHER_CLIMATE: [
+    /\b(climate|climate change|temperature|heatwave|monsoon|rain|rainfall|weather|global warming|co2|emissions|meteorological|noaa|wmo|pmd|climate feedback)\b/i,
+    /(موسم|بارش|گرمای شدید|ہیٹ ویو|آب و ہوا|مون سون|گرمی|موسمیاتی تبدیلی)/i,
+    /(clima|cambio climático|temperatura|lluvia|calentamiento|meteorología)/i,
+    /(cuaca|iklim|perubahan iklim|hujan|suhu|pemanasan global)/i,
+  ],
+  BIODIVERSITY: [
+    /\b(biodiversity|species|wildlife|animal|plant|flora|fauna|inaturalist|extinction|endangered|ecosystem|habitat|forest|conservation)\b/i,
+    /(حیاتیاتی تنوع|جنگلی حیات|جانور|پودے|ماحولیاتی نظام|جنگلات)/i,
+    /(biodiversidad|especies|vida silvestre|animales|plantas|ecosistema)/i,
+    /(keanekaragaman hayati|spesies|satwa liar|hewan|tumbuhan|ekosistem)/i,
+  ],
   EARTH_SPACE: [
     /\b(earth|flat|sphere|spherical|round|planet|orbit|sun|moon|star|nasa|usgs|space|astronomy|solar|galaxy|gravity|cosmos)\b/i,
     /(زمین|سورج|چاند|سیارہ|خلا|ناسا|کائنات|گردش)/i,
     /(tierra|plana|esférica|planeta|espacio|nasa|órbita)/i,
     /(bumi|bulat|datar|planet|antariksa|orbit)/i,
-  ],
-  WEATHER_CLIMATE: [
-    /\b(climate|temperature|heatwave|monsoon|rain|rainfall|weather|global warming|co2|emissions|meteorological|noaa|wmo|pmd)\b/i,
-    /(موسم|بارش|گرمای شدید|ہیٹ ویو|آب و ہوا|مون سون|گرمی)/i,
-    /(clima|temperatura|lluvia|calentamiento|meteorología)/i,
-    /(cuaca|hujan|suhu|iklim|pemanasan global)/i,
   ],
   GEOLOGY: [
     /\b(earthquake|tectonic|faultline|seismic|volcano|tsunami|tremor|richter|geology)\b/i,

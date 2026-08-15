@@ -42,9 +42,9 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const domainPills: { id: DomainCategory; label: string; icon: string }[] = [
     { id: 'ALL', label: t.chat.domainAll, icon: 'apps' },
     { id: 'HEALTH', label: t.chat.domainHealth, icon: 'medical_services' },
-    { id: 'SCIENCE', label: t.chat.domainScience, icon: 'science' },
     { id: 'WEATHER_CLIMATE', label: t.chat.domainClimate, icon: 'cloud' },
-    { id: 'DISASTER', label: t.chat.domainDisaster, icon: 'warning' },
+    { id: 'AI_DISINFORMATION', label: t.chat.domainAi, icon: 'psychology' },
+    { id: 'SCIENCE', label: t.chat.domainScience, icon: 'science' },
   ];
 
   const sampleClaims = [
