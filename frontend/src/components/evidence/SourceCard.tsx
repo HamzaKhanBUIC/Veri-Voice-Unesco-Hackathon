@@ -35,66 +35,54 @@ export const SourceCard: React.FC<SourceCardProps> = ({
     domain.includes('ndma.gov.pk');
 
   return (
-    <div className="bg-surface-elevated border border-border-subtle hover:border-border-variant rounded-lg p-4 transition-tactile text-left flex flex-col gap-2.5">
-      {/* Top Header: Domain & Authority Badge */}
+    <div className="py-3.5 border-b border-white/[0.06] text-left flex flex-col gap-2 group">
+      {/* Top Header Line: Domain + Authority Tier */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span className="material-symbols-outlined text-brand-teal-bright text-[18px]">public</span>
-          <span className="font-mono text-xs font-semibold text-text-primary truncate uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          <span className="text-[11px] font-mono font-semibold text-text-primary uppercase tracking-wider">
             {domain}
           </span>
         </div>
         <span
-          className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider flex-shrink-0 ${
+          className={`text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded ${
             isPrimary
-              ? 'bg-brand-navy/60 text-brand-navy-light border border-brand-navy-light/30 font-semibold'
-              : 'bg-surface-container text-text-muted border border-border-subtle'
+              ? 'text-brand-teal-bright bg-brand-teal/20 border border-brand-teal/30 font-semibold'
+              : 'text-text-muted bg-white/[0.03]'
           }`}
         >
-          {isPrimary ? 'Primary Authority' : 'Verified Web Source'}
+          {isPrimary ? 'Primary Authority' : 'Web Source'}
         </span>
       </div>
 
-      {/* Title */}
+      {/* Source Title */}
       <h4 className="font-editorial text-sm font-medium text-text-primary leading-snug">
-        {evidence.sourceTitle || evidence.organization || `Source #${index}`}
+        {evidence.sourceTitle || evidence.organization || `Source Reference #${index}`}
       </h4>
 
-      {/* Organization */}
-      {evidence.organization && (
-        <span className="text-xs text-text-muted font-sans">
-          Publisher: <strong className="text-text-secondary font-medium">{evidence.organization}</strong>
-        </span>
-      )}
-
-      {/* Excerpt / Grounding Snippet */}
+      {/* Grounding Excerpt Note */}
       {(evidence.statement || evidence.excerpt) && (
         <div
           onClick={() => setExpanded(!expanded)}
-          className={`bg-surface-container/60 border-l-2 border-brand-teal-bright p-2.5 rounded-r text-xs text-text-secondary font-sans leading-relaxed cursor-pointer hover:bg-surface-container transition-colors ${
-            expanded ? '' : 'line-clamp-3'
-          }`}
-          title="Click to toggle full excerpt"
+          className="border-l-2 border-brand-teal-bright/60 pl-3 py-1 text-xs text-text-secondary font-sans leading-relaxed cursor-pointer hover:text-text-primary transition-colors"
+          title="Click to toggle excerpt"
         >
-          "{evidence.statement || evidence.excerpt}"
+          <p className={expanded ? '' : 'line-clamp-3'}>
+            "{evidence.statement || evidence.excerpt}"
+          </p>
         </div>
       )}
 
-      {/* Footer Outbound Link & Expand Action */}
-      <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-xs font-mono">
+      {/* Outbound Link */}
+      <div className="flex items-center justify-between text-xs font-mono pt-1">
         <a
           href={evidence.url || '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand-teal-bright hover:underline inline-flex items-center gap-1"
+          className="text-brand-teal-bright hover:underline inline-flex items-center gap-1 text-[11px]"
         >
-          <span>Visit Source</span>
-          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+          <span>Examine Source Data</span>
+          <span className="material-symbols-outlined text-[13px]">open_in_new</span>
         </a>
-
-        {evidence.claimId && (
-          <span className="text-[10px] text-text-muted">ID: {evidence.claimId}</span>
-        )}
       </div>
     </div>
   );

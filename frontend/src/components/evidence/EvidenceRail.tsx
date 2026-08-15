@@ -21,33 +21,33 @@ export const EvidenceRail: React.FC<EvidenceRailProps> = ({
   isMobileDrawer = false,
 }) => {
   const strengthLabels = {
-    STRONG_EVIDENCE: { label: 'Strong Evidence', color: 'text-verdict-true bg-verdict-true/10 border-verdict-true/30' },
-    SUFFICIENT_EVIDENCE: { label: 'Sufficient Evidence', color: 'text-brand-teal-bright bg-brand-teal-bright/10 border-brand-teal-bright/30' },
-    WEAK_EVIDENCE: { label: 'Limited Evidence', color: 'text-verdict-mixed bg-verdict-mixed/10 border-verdict-mixed/30' },
-    NO_EVIDENCE: { label: 'Zero Evidence Retrieved', color: 'text-verdict-uncertain bg-verdict-uncertain/10 border-verdict-uncertain/30' },
-    CONFLICTING_EVIDENCE: { label: 'Conflicting Consensus', color: 'text-verdict-mixed bg-verdict-mixed/10 border-verdict-mixed/30' },
-    INFRASTRUCTURE_FAILURE: { label: 'Search Incomplete', color: 'text-verdict-false bg-verdict-false/10 border-verdict-false/30' },
-  }[evidenceStrength] || { label: 'Evidence Grounded', color: 'text-text-secondary bg-surface-container border-border-subtle' };
+    STRONG_EVIDENCE: { label: 'Strong Evidence', color: 'text-verdict-true' },
+    SUFFICIENT_EVIDENCE: { label: 'Sufficient Evidence', color: 'text-brand-teal-bright' },
+    WEAK_EVIDENCE: { label: 'Limited Evidence', color: 'text-verdict-mixed' },
+    NO_EVIDENCE: { label: 'Zero Evidence Retrieved', color: 'text-verdict-uncertain' },
+    CONFLICTING_EVIDENCE: { label: 'Conflicting Consensus', color: 'text-verdict-mixed' },
+    INFRASTRUCTURE_FAILURE: { label: 'Search Incomplete', color: 'text-verdict-false' },
+  }[evidenceStrength] || { label: 'Evidence Grounded', color: 'text-text-secondary' };
 
   return (
     <aside
-      className={`w-full lg:w-[380px] bg-surface-container-low border-l border-border-subtle flex flex-col h-full overflow-hidden ${className}`}
+      className={`w-full lg:w-[380px] bg-[#0E0E0E] border-l border-white/[0.06] flex flex-col h-full overflow-hidden ${className}`}
       aria-label="Evidence and Source Rail"
     >
       {/* Header */}
-      <div className="p-4 md:p-5 border-b border-border-subtle bg-surface-container-low/95 backdrop-blur flex items-center justify-between sticky top-0 z-10">
+      <div className="p-5 border-b border-white/[0.06] flex items-center justify-between sticky top-0 z-10 bg-[#0E0E0E]/95 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <AcousticAnchor size={16} />
-          <h3 className="font-editorial font-semibold text-base text-text-primary">Evidence Rail</h3>
+          <AcousticAnchor size={14} />
+          <h3 className="font-editorial font-medium text-base text-text-primary">Evidence Dossier</h3>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-text-secondary bg-surface-container px-2 py-0.5 rounded border border-border-subtle">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
             {evidence.length} {evidence.length === 1 ? 'SOURCE' : 'SOURCES'}
           </span>
           {isMobileDrawer && onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded text-text-secondary hover:text-text-primary hover:bg-surface-container"
+              className="p-1 text-text-muted hover:text-text-primary"
               aria-label="Close evidence rail"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
@@ -57,25 +57,25 @@ export const EvidenceRail: React.FC<EvidenceRailProps> = ({
       </div>
 
       {/* Meta Bar: Strength & Confidence */}
-      <div className="p-4 bg-surface-elevated/60 border-b border-border-subtle flex items-center justify-between gap-2">
-        <span className={`px-2.5 py-1 rounded text-[11px] font-mono uppercase tracking-wider border ${strengthLabels.color}`}>
+      <div className="px-5 py-3 border-b border-white/[0.04] flex items-center justify-between gap-2 text-xs font-mono">
+        <span className={`uppercase tracking-wider font-semibold ${strengthLabels.color}`}>
           {strengthLabels.label}
         </span>
-        <div className="text-right">
-          <span className="text-[10px] font-mono uppercase text-text-muted block">Confidence</span>
-          <span className="text-xs font-mono font-semibold text-brand-teal-bright">
+        <div className="text-right text-text-muted">
+          <span>Confidence: </span>
+          <strong className="text-brand-teal-bright font-semibold">
             {typeof confidence === 'number' ? `${(confidence * 100).toFixed(0)}%` : confidence}
-          </span>
+          </strong>
         </div>
       </div>
 
       {/* Scrollable Source Cards Stream */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-5 py-2 space-y-1">
         {evidence.length === 0 ? (
-          <div className="py-12 text-center flex flex-col items-center gap-3">
-            <span className="material-symbols-outlined text-text-muted text-[36px]">travel_explore</span>
-            <p className="text-xs text-text-muted font-sans max-w-[220px]">
-              No direct candidate evidence available. VeriVoice refuses to hallucinate un-grounded claims.
+          <div className="py-16 text-center flex flex-col items-center gap-3">
+            <span className="material-symbols-outlined text-text-muted text-[32px]">travel_explore</span>
+            <p className="text-xs text-text-muted font-sans max-w-[240px] leading-relaxed">
+              No candidate evidence retrieved. VeriVoice refuses to hallucinate un-grounded assertions.
             </p>
           </div>
         ) : (
@@ -86,7 +86,7 @@ export const EvidenceRail: React.FC<EvidenceRailProps> = ({
       </div>
 
       {/* Institutional Guarantee Footer */}
-      <div className="p-3 bg-surface-container-lowest border-t border-border-subtle text-[11px] font-mono text-text-muted flex items-center gap-2">
+      <div className="p-4 border-t border-white/[0.06] text-[11px] font-mono text-text-muted flex items-center gap-2">
         <span className="material-symbols-outlined text-brand-teal-bright text-[15px]">verified_user</span>
         <span>Anti-hallucination citation bounds enforced</span>
       </div>

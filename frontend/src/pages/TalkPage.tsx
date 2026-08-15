@@ -30,7 +30,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
   const [statusMessage, setStatusMessage] = useState(t.talk.tapToSpeak);
-  
+
   // Multi-Turn Conversational Session State
   const [sessionId, setSessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
   const [turnCount, setTurnCount] = useState<number>(0);
@@ -68,17 +68,10 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     }
   }, []);
 
-  // Sync prop language changes
-  useEffect(() => {
-    if (currentLanguage) {
-      setResponseLanguage(currentLanguage);
-    }
-  }, [currentLanguage]);
-
   // Handle Core Click (Start Recording, Stop Recording, or Barge-In)
   const handleCoreClick = async () => {
     if (turnCount >= 10) {
-      setStatusMessage('Session limit reached (10 turns). Starting a fresh session...');
+      setStatusMessage('Session limit reached. Refreshing conversation...');
       handleResetSession();
       return;
     }
@@ -99,24 +92,24 @@ export const TalkPage: React.FC<TalkPageProps> = ({
       const success = await startRecording();
       if (success) {
         setVoiceState('LISTENING');
-        setStatusMessage('Listening to your claim or question... (Speak clearly)');
+        setStatusMessage('Listening to your claim or question...');
       }
     } else if (voiceState === 'LISTENING') {
       // Stop recording and process
-      setStatusMessage('Finalizing voice capture...');
+      setStatusMessage('Analyzing audio...');
       setVoiceState('PROCESSING');
       const blob = await stopRecording();
 
       if (!blob) {
         setVoiceState('IDLE');
-        setStatusMessage('No audio captured. Tap to speak.');
+        setStatusMessage(t.talk.tapToSpeak);
         return;
       }
 
       // Submit Audio Base64 with Session Context
       try {
         setVoiceState('CHECKING');
-        setStatusMessage('Checking authoritative evidence & context...');
+        setStatusMessage('Grounding evidence across verified repositories...');
 
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -142,7 +135,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
           } catch (apiErr: unknown) {
             console.error('Talk verification failed:', apiErr);
             setVoiceState('ERROR');
-            setStatusMessage(apiErr instanceof Error ? apiErr.message : 'Verification failed. Tap to retry.');
+            setStatusMessage(apiErr instanceof Error ? apiErr.message : 'Verification unavailable. Tap to retry.');
           }
         };
         reader.readAsDataURL(blob);
@@ -157,7 +150,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const handleQuickFollowUp = async (promptText: string) => {
     stopActiveAudioPlayback();
     setVoiceState('CHECKING');
-    setStatusMessage(`Processing: "${promptText}"...`);
+    setStatusMessage(`Verifying follow-up: "${promptText}"...`);
     setTranscriptText(promptText);
 
     try {
@@ -189,12 +182,10 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     setCurrentResult(response);
     setTranscriptText(response.userClaim || 'Spoken Query');
     setVoiceState('RESPONDING');
-    setStatusMessage('Response ready.');
+    setStatusMessage('Verification grounded.');
 
     // Update Session Context
-    const newTurnCount = (response.conversation?.turnCount !== undefined)
-      ? response.conversation.turnCount
-      : turnCount + 1;
+    const newTurnCount = response.conversation?.turnCount !== undefined ? response.conversation.turnCount : turnCount + 1;
     setTurnCount(newTurnCount);
 
     if (response.conversation?.sessionId) {
@@ -230,7 +221,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     setActiveEvidence([]);
     setActiveClaim('');
     setSessionId(`sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
-    setStatusMessage('Tap the Acoustic Core or Hold Space to Speak');
+    setStatusMessage(t.talk.tapToSpeak);
   };
 
   const formatSeconds = (s: number) => {
@@ -240,177 +231,166 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-between items-center px-4 py-8 max-w-4xl mx-auto w-full min-h-[calc(100vh-80px)]">
-      {/* Top Header Bar */}
-      <div className="w-full flex items-center justify-between border-b border-border-subtle pb-4">
+    <div className="flex-1 flex flex-col justify-between items-center px-6 md:px-12 py-8 max-w-4xl mx-auto w-full min-h-[calc(100vh-80px)]">
+      {/* Top Header: Minimalist telemetry */}
+      <div className="w-full flex items-center justify-between border-b border-white/[0.06] pb-4">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-brand-teal-bright flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-brand-teal-bright animate-pulse" />
+          <span className="font-mono text-xs uppercase tracking-widest text-text-secondary">
             {t.talk.roomTitle}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-2.5 py-1 bg-surface-container rounded-full border border-border-subtle flex items-center gap-1.5 text-xs font-mono text-text-secondary">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-teal-bright" />
-            <span>Turn {turnCount} / 10</span>
-          </div>
-
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-mono text-text-muted">
+            Turn {turnCount} / 10
+          </span>
           <button
             onClick={() => onNavigate('chat')}
-            className="px-3 py-1 bg-surface-container hover:bg-surface-container-high rounded text-xs font-mono text-text-secondary hover:text-text-primary border border-border-subtle transition-tactile"
+            className="text-xs font-mono text-text-secondary hover:text-brand-teal-bright transition-colors"
           >
-            {t.nav.chat}
+            {t.nav.chat} →
           </button>
         </div>
       </div>
 
-      {/* Main Acoustic Core & Voice Resonator */}
-      <div className="flex-1 flex flex-col items-center justify-center my-6 gap-8 text-center w-full">
-        {/* Core Resonator */}
-        <AcousticCore
-          state={voiceState}
-          volumeLevel={isRecording ? volumeLevel : 0}
-          size="lg"
-          onClick={handleCoreClick}
-        />
+      {/* Spacious Voice Sanctuary */}
+      <div className="flex-1 flex flex-col items-center justify-center my-8 gap-8 text-center w-full max-w-2xl">
+        {/* The Central Breathing Acoustic Core */}
+        <div className="relative p-4 flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-tr from-brand-navy/20 via-brand-teal/10 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
+          <AcousticCore
+            state={voiceState}
+            volumeLevel={isRecording ? volumeLevel : 0}
+            size="lg"
+            onClick={handleCoreClick}
+          />
+        </div>
 
-        {/* Live Status Message & Timer */}
-        <div className="flex flex-col items-center gap-2 max-w-md">
-          <p className="font-editorial text-lg sm:text-xl text-text-primary font-medium">
+        {/* Status Message */}
+        <div className="space-y-2">
+          <p className="font-editorial text-xl sm:text-2xl text-text-primary font-medium tracking-tight">
             {statusMessage}
           </p>
 
           {isRecording && (
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-verdict-false/10 border border-verdict-false/30 text-verdict-false rounded-full text-xs font-mono font-bold animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-verdict-false" />
-              <span>RECORDING {formatSeconds(recordingDuration)} / 00:30 (Tap to Finish)</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-verdict-false/10 text-verdict-false text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-verdict-false animate-ping" />
+              <span>RECORDING {formatSeconds(recordingDuration)} / 00:30 (Tap to finish)</span>
             </div>
           )}
 
           {recorderError && (
-            <div className="text-xs font-mono text-verdict-false bg-verdict-false/10 border border-verdict-false/20 px-3 py-1.5 rounded mt-2">
-              {recorderError}
-            </div>
+            <p className="text-xs font-mono text-verdict-false">{recorderError}</p>
           )}
 
           {hasPermission === false && (
             <button
               onClick={() => onNavigate('chat')}
-              className="text-xs text-brand-teal-bright underline font-mono mt-1"
+              className="text-xs text-brand-teal-bright underline font-mono block mx-auto"
             >
-              Use Text Verification instead
+              Use text verification instead
             </button>
           )}
         </div>
 
-        {/* Transcript Box */}
+        {/* Spoken Transcript Note */}
         {transcriptText && (
-          <div className="w-full max-w-2xl bg-surface-container-low border border-border-subtle rounded-xl p-4 text-left animate-fade-up">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-mono uppercase text-text-muted">
-                Spoken Query:
-              </span>
-              {currentResult?.conversation?.evidenceReused && (
-                <span className="text-[10px] font-mono text-brand-teal-bright bg-brand-teal/10 px-2 py-0.5 rounded border border-brand-teal/30">
-                  ⚡ Evidence Reused (0 Search Latency)
-                </span>
-              )}
-            </div>
-            <p className="font-sans text-sm md:text-base text-text-primary font-medium">
+          <div className="w-full text-left border-l-2 border-brand-teal-bright/40 pl-4 py-1 animate-fade-up">
+            <span className="text-[10px] font-mono uppercase text-text-muted block">Query:</span>
+            <p className="font-sans text-sm sm:text-base text-text-primary italic">
               "{transcriptText}"
             </p>
           </div>
         )}
 
-        {/* Result & Verdict Card */}
+        {/* Editorial Typography-Led Verdict Statement (No Heavy Box Overload) */}
         {currentResult && voiceState === 'RESPONDING' && (
-          <div className="w-full max-w-2xl flex flex-col gap-4 animate-fade-up">
-            <div className="bg-surface-elevated border border-border-subtle rounded-xl p-6 text-left shadow-xl flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-                <VerdictBadge verdict={currentResult.verdict} size="md" />
-                <span className="text-xs font-mono text-text-muted">
-                  Confidence: <strong className="text-brand-teal-bright">{currentResult.confidence}</strong>
-                </span>
-              </div>
+          <div className="w-full text-left space-y-6 pt-4 border-t border-white/[0.08] animate-fade-up">
+            {/* Verdict Header Line */}
+            <div className="flex items-center justify-between">
+              <VerdictBadge verdict={currentResult.verdict} size="md" />
+              <span className="text-xs font-mono text-text-muted">
+                Confidence: <strong className="text-brand-teal-bright">{currentResult.confidence}</strong>
+              </span>
+            </div>
 
-              <p className="font-editorial text-base md:text-lg text-text-primary leading-relaxed">
-                {currentResult.explanation}
-              </p>
+            {/* Large Editorial Truth Statement */}
+            <p className="font-editorial text-lg sm:text-xl text-text-primary leading-relaxed">
+              {currentResult.explanation}
+            </p>
 
-              {/* Audio Response Player */}
-              {currentResult.audioUrl && (
-                <AudioWavePlayer
-                  audioUrl={apiClient.resolveAudioUrl(currentResult.audioUrl)}
-                  autoPlay={true}
-                  title={`VeriVoice Voice Response (${responseLanguage.toUpperCase()})`}
-                />
-              )}
+            {/* Spoken Audio Response Player */}
+            {currentResult.audioUrl && (
+              <AudioWavePlayer
+                audioUrl={apiClient.resolveAudioUrl(currentResult.audioUrl)}
+                autoPlay={true}
+                title={`Spoken Verdict (${responseLanguage.toUpperCase()})`}
+              />
+            )}
 
-              {/* Quick Conversational Follow-Up Chips */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <span className="text-[11px] font-mono text-text-muted uppercase">Follow-up:</span>
+            {/* Quick Follow-up Prompts */}
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <span className="text-[11px] font-mono text-text-muted uppercase">Follow-up:</span>
+              <button
+                onClick={() => handleQuickFollowUp('Why is that?')}
+                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
+              >
+                "Why?"
+              </button>
+              <button
+                onClick={() => handleQuickFollowUp('What did the primary source say?')}
+                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
+              >
+                "What did the source say?"
+              </button>
+              <button
+                onClick={() => handleQuickFollowUp('Ab Urdu mein samjhao')}
+                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile font-urdu"
+              >
+                "اردو میں سمجھائیں"
+              </button>
+              <button
+                onClick={() => handleQuickFollowUp('Explain in Spanish')}
+                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
+              >
+                "En Español"
+              </button>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex items-center justify-between pt-4 border-t border-white/[0.06] text-xs font-mono">
+              <button
+                onClick={() => setShowEvidenceDrawer(true)}
+                className="inline-flex items-center gap-1.5 text-brand-teal-bright hover:underline"
+              >
+                <span className="material-symbols-outlined text-[16px]">account_tree</span>
+                <span>{t.chat.viewEvidence} ({currentResult.evidence?.length || activeEvidence.length || 0} Sources)</span>
+              </button>
+
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleQuickFollowUp('Why is that?')}
-                  className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-xs font-mono text-text-secondary hover:text-text-primary rounded border border-border-subtle transition-tactile"
+                  onClick={handleResetSession}
+                  className="text-text-muted hover:text-text-primary transition-colors"
                 >
-                  "Why?"
+                  {t.talk.newClaim}
                 </button>
                 <button
-                  onClick={() => handleQuickFollowUp('What did the primary source say?')}
-                  className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-xs font-mono text-text-secondary hover:text-text-primary rounded border border-border-subtle transition-tactile"
+                  onClick={handleCoreClick}
+                  className="px-4 py-2 bg-brand-teal hover:bg-brand-teal-dim text-white rounded-lg font-medium transition-tactile flex items-center gap-1.5"
                 >
-                  "What did the source say?"
+                  <span className="material-symbols-outlined text-[16px]">mic</span>
+                  <span>Speak</span>
                 </button>
-                <button
-                  onClick={() => handleQuickFollowUp('Ab Urdu mein samjhao')}
-                  className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-xs font-mono text-text-secondary hover:text-text-primary rounded border border-border-subtle transition-tactile"
-                >
-                  "اردو میں سمجھائیں"
-                </button>
-                <button
-                  onClick={() => handleQuickFollowUp('Explain in Spanish')}
-                  className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-xs font-mono text-text-secondary hover:text-text-primary rounded border border-border-subtle transition-tactile"
-                >
-                  "En Español"
-                </button>
-              </div>
-
-              {/* Actions: View Evidence & Ask Follow-up */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border-subtle">
-                <button
-                  onClick={() => setShowEvidenceDrawer(true)}
-                  className="inline-flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright hover:underline"
-                >
-                  <span className="material-symbols-outlined text-[16px]">account_tree</span>
-                  <span>{t.chat.viewEvidence} ({currentResult.evidence?.length || activeEvidence.length || 0} Sources)</span>
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleResetSession}
-                    className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high rounded text-xs font-mono text-text-secondary border border-border-subtle"
-                  >
-                    {t.talk.newClaim}
-                  </button>
-                  <button
-                    onClick={handleCoreClick}
-                    className="px-3 py-1.5 bg-brand-teal hover:bg-brand-teal-dim text-white rounded text-xs font-mono font-medium shadow flex items-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">mic</span>
-                    <span>{t.hero.startTalk}</span>
-                  </button>
-                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Hint Dock */}
-      <div className="w-full py-2 text-center text-xs font-mono text-text-muted border-t border-border-subtle flex items-center justify-between px-2">
-        <span>Tap Core to speak or interrupt · Max 30s per turn</span>
-        <span className="hidden sm:inline">Session TTL: 5 mins inactivity</span>
+      {/* Bottom Quiet Footer */}
+      <div className="w-full py-3 text-xs font-mono text-text-muted border-t border-white/[0.06] flex items-center justify-between">
+        <span>Tap core to speak or interrupt</span>
+        <span>Neural EdgeTTS · Groq Whisper</span>
       </div>
 
       {/* Slide-out Evidence Rail Drawer */}
@@ -421,7 +401,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md h-full shadow-2xl border-l border-border-subtle"
+            className="w-full max-w-md h-full shadow-2xl border-l border-white/[0.08] bg-[#0E0E0E]"
           >
             <EvidenceRail
               evidence={currentResult?.evidence || activeEvidence || []}

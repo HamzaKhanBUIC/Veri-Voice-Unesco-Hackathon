@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button } from '../components/ui/Button';
 import { VerdictBadge } from '../components/ui/VerdictBadge';
 import { AcousticAnchor } from '../components/brand/AcousticAnchor';
+import { AcousticCore } from '../components/voice/AcousticCore';
+import { EvidenceConstellation3D } from '../components/evidence/EvidenceConstellation3D';
 import { getTranslation } from '../i18n/translations';
 import { AppView } from '../types';
 
@@ -26,7 +27,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     { text: 'What causes dengue fever and how is it transmitted?', lang: 'EN', verdict: 'RESEARCH_RESPONSE' as const },
   ];
 
-  // Reorder sample claims so the active language is prioritized first
+  // Prioritize active language claims
   const activeLanguageClaims = [...sampleClaims].sort((a, b) => {
     if (a.lang.toLowerCase() === currentLanguage.toLowerCase()) return -1;
     if (b.lang.toLowerCase() === currentLanguage.toLowerCase()) return 1;
@@ -40,206 +41,268 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     onNavigate('chat');
   };
 
-  const discordInviteUrl = 'https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=3147776&scope=bot%20applications.commands';
+  const discordInviteUrl =
+    'https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=3147776&scope=bot%20applications.commands';
 
   return (
-    <div className="flex flex-col gap-16 md:gap-24 pb-20 pt-6 md:pt-12">
-      {/* 1. HERO SECTION */}
-      <section className="px-4 md:px-8 max-w-[1280px] mx-auto w-full flex flex-col items-center text-center gap-6 md:gap-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-border-subtle text-xs font-mono uppercase tracking-widest text-text-secondary animate-fade-up">
-          <AcousticAnchor size={12} pulse />
-          <span>{t.hero.tagline}</span>
-        </div>
-
-        <h1 className="font-editorial text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-text-primary leading-[1.1] max-w-[980px]">
-          {t.hero.headline}
-        </h1>
-
-        <p className="font-sans text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl leading-relaxed">
-          {t.hero.subheadline}
-        </p>
-
-        {/* Action CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-2 w-full max-w-lg">
-          <Button
-            variant="teal"
-            size="lg"
-            onClick={() => onNavigate('talk')}
-            className="w-full sm:w-auto min-w-[180px]"
-            icon={<span className="material-symbols-outlined text-[20px]">mic</span>}
-          >
-            {t.hero.startTalk}
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => onNavigate('chat')}
-            className="w-full sm:w-auto min-w-[180px]"
-            icon={<span className="material-symbols-outlined text-[20px]">search</span>}
-          >
-            {t.hero.searchResearch}
-          </Button>
-
-          <a
-            href={discordInviteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#5865F2]/15 hover:bg-[#5865F2]/25 text-[#7983F5] hover:text-white border border-[#5865F2]/40 text-sm font-mono uppercase tracking-wider transition-all w-full sm:w-auto"
-          >
-            <span className="material-symbols-outlined text-[18px]">forum</span>
-            <span>{t.hero.discordBot}</span>
-          </a>
-        </div>
-      </section>
-
-      {/* 2. HOW TO USE VERIVOICE (Clear 3-Step Practical Guide) */}
-      <section className="px-4 md:px-8 max-w-[1200px] mx-auto w-full">
-        <div className="text-center mb-8">
-          <span className="text-xs font-mono uppercase tracking-widest text-brand-teal-bright">{t.quickStart.badge}</span>
-          <h2 className="font-editorial text-2xl sm:text-3xl font-semibold text-text-primary mt-1">
-            {t.quickStart.title}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Step 1: Voice Room */}
-          <div
-            onClick={() => onNavigate('talk')}
-            className="bg-surface-elevated hover:bg-surface-container p-6 sm:p-8 rounded-2xl border border-border-subtle hover:border-brand-teal/50 transition-all cursor-pointer flex flex-col justify-between gap-6 group"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-navy/60 border border-brand-teal/30 flex items-center justify-center text-brand-teal-bright group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">mic</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-mono uppercase text-brand-teal-bright font-semibold">{t.quickStart.step1Tag}</span>
-                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">{t.quickStart.step1Title}</h3>
-              </div>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                {t.quickStart.step1Desc}
-              </p>
+    <div className="flex flex-col w-full">
+      {/* 1. EDITORIAL ASYMMETRIC HERO */}
+      <section className="relative px-6 md:px-12 lg:px-16 pt-8 md:pt-16 pb-20 max-w-[1360px] mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          {/* Left Column: Authoritative Editorial Statement */}
+          <div className="lg:col-span-7 flex flex-col items-start text-left gap-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono uppercase tracking-widest text-text-secondary">
+              <AcousticAnchor size={12} pulse />
+              <span>{t.hero.tagline}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright group-hover:translate-x-1 transition-transform">
-              <span>{t.quickStart.step1Btn}</span>
-              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+
+            <h1 className="font-editorial text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-medium tracking-tight text-text-primary leading-[1.1] max-w-[720px]">
+              {t.hero.headline}
+            </h1>
+
+            <p className="font-sans text-base sm:text-lg text-text-secondary max-w-[580px] leading-relaxed">
+              {t.hero.subheadline}
+            </p>
+
+            {/* Action CTAs (Restrained & Tactile) */}
+            <div className="flex flex-wrap items-center gap-3 pt-2 w-full">
+              <button
+                onClick={() => onNavigate('talk')}
+                className="px-6 py-3.5 rounded-xl bg-brand-teal hover:bg-brand-teal-dim text-white font-mono text-xs uppercase tracking-wider font-semibold transition-tactile flex items-center gap-2 shadow-lg shadow-brand-teal/20"
+              >
+                <span className="material-symbols-outlined text-[18px]">mic</span>
+                <span>{t.hero.startTalk}</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('chat')}
+                className="px-6 py-3.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-text-primary border border-white/[0.1] font-mono text-xs uppercase tracking-wider font-medium transition-tactile flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">search</span>
+                <span>{t.hero.searchResearch}</span>
+              </button>
+
+              <a
+                href={discordInviteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-3.5 rounded-xl bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#7983F5] hover:text-white border border-[#5865F2]/30 font-mono text-xs uppercase tracking-wider transition-tactile flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">forum</span>
+                <span>Discord</span>
+              </a>
+            </div>
+
+            {/* Subtle Metadata Telemetry */}
+            <div className="flex items-center gap-6 pt-4 text-xs font-mono text-text-muted border-t border-white/[0.06] w-full max-w-[580px]">
+              <span>Latency: &lt;1.8s Spoken Response</span>
+              <span>•</span>
+              <span>Grounding: Primary Sources</span>
+              <span>•</span>
+              <span>Supported: EN · UR · ES · ID</span>
             </div>
           </div>
 
-          {/* Step 2: Chat & Evidence Rail */}
-          <div
-            onClick={() => onNavigate('chat')}
-            className="bg-surface-elevated hover:bg-surface-container p-6 sm:p-8 rounded-2xl border border-border-subtle hover:border-brand-teal/50 transition-all cursor-pointer flex flex-col justify-between gap-6 group"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-navy/60 border border-brand-teal/30 flex items-center justify-center text-brand-teal-bright group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">manage_search</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-mono uppercase text-brand-teal-bright font-semibold">{t.quickStart.step2Tag}</span>
-                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">{t.quickStart.step2Title}</h3>
-              </div>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                {t.quickStart.step2Desc}
-              </p>
+          {/* Right Column: Hero Acoustic Core (Main Visual Signature) */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center relative">
+            <div className="relative p-6 sm:p-8 flex items-center justify-center">
+              {/* Soft background ambient radial diffusion */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-brand-navy/30 via-brand-teal/15 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
+              
+              <AcousticCore
+                state="IDLE"
+                size="lg"
+                onClick={() => onNavigate('talk')}
+              />
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright group-hover:translate-x-1 transition-transform">
-              <span>{t.quickStart.step2Btn}</span>
-              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </div>
-          </div>
-
-          {/* Step 3: Discord Bot */}
-          <a
-            href={discordInviteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-surface-elevated hover:bg-surface-container p-6 sm:p-8 rounded-2xl border border-border-subtle hover:border-[#5865F2]/50 transition-all cursor-pointer flex flex-col justify-between gap-6 group"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#5865F2]/20 border border-[#5865F2]/40 flex items-center justify-center text-[#7983F5] group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">forum</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-mono uppercase text-[#7983F5] font-semibold">{t.quickStart.step3Tag}</span>
-                <h3 className="font-editorial text-xl font-semibold text-text-primary mt-0.5">{t.quickStart.step3Title}</h3>
-              </div>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                {t.quickStart.step3Desc}
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-mono text-[#7983F5] group-hover:translate-x-1 transition-transform">
-              <span>{t.quickStart.step3Btn}</span>
-              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-            </div>
-          </a>
-        </div>
-      </section>
-
-      {/* 3. ONE-CLICK SAMPLE INQUIRIES */}
-      <section className="px-4 md:px-8 max-w-[1200px] mx-auto w-full">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-wider text-text-secondary flex items-center gap-2">
-              <span className="material-symbols-outlined text-brand-teal-bright text-[16px]">touch_app</span>
-              <span>{t.samples.title}</span>
+            <span className="text-[11px] font-mono text-text-muted uppercase tracking-wider mt-2">
+              Tap core to enter live voice sanctuary
             </span>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activeLanguageClaims.map((item, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSampleClick(item.text)}
-                dir={item.isRtl ? 'rtl' : 'ltr'}
-                className="bg-surface-elevated hover:bg-surface-container border border-border-subtle hover:border-brand-teal-bright/40 p-4 rounded-xl text-left transition-all flex flex-col justify-between gap-3 group"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <span className="font-mono text-[10px] uppercase text-text-muted bg-surface-container px-2 py-0.5 rounded border border-border-subtle">
-                    {item.lang}
-                  </span>
-                  <VerdictBadge verdict={item.verdict} size="sm" />
-                </div>
-                <p className={`text-sm text-text-primary leading-snug group-hover:text-brand-teal-bright transition-colors ${item.isRtl ? 'font-urdu text-base' : 'font-editorial'}`}>
-                  "{item.text}"
-                </p>
-                <div className="flex items-center gap-1 text-[11px] font-mono text-text-muted group-hover:text-brand-teal-bright transition-colors" dir="ltr">
-                  <span>Verify Claim</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* 4. DISCORD BOT COMMUNITY BANNER */}
-      <section className="px-4 md:px-8 max-w-[1200px] mx-auto w-full">
-        <div className="bg-gradient-to-r from-surface-elevated to-[#5865F2]/10 border border-[#5865F2]/30 rounded-2xl p-6 sm:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-          <div className="flex flex-col gap-3 max-w-xl text-left">
-            <div className="inline-flex items-center gap-2 text-xs font-mono uppercase text-[#7983F5]">
-              <span className="w-2 h-2 rounded-full bg-verdict-true animate-pulse" />
-              <span>VeriVoice Discord Bot · Online & Verified</span>
-            </div>
-            <h3 className="font-editorial text-2xl sm:text-3xl font-semibold text-text-primary">
-              Fact-check directly in your Discord community.
-            </h3>
-            <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-              Equip your community with automated rumor checking. Send voice attachments or run <span className="font-mono text-text-primary">/verify</span>, <span className="font-mono text-text-primary">/research</span>, or <span className="font-mono text-text-primary">/voice</span> commands.
-            </p>
+      {/* 2. HOW IT WORKS (Full-Bleed Tone Shift: Editorial Linear Rhythm, Zero Card Overload) */}
+      <section className="w-full bg-[#12141A] border-y border-white/[0.06] py-16 md:py-24 px-6 md:px-12 lg:px-16">
+        <div className="max-w-[1360px] mx-auto w-full">
+          <div className="max-w-2xl mb-12 text-left">
+            <span className="text-xs font-mono uppercase tracking-widest text-brand-teal-bright">
+              {t.quickStart.badge}
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl font-medium text-text-primary mt-2">
+              {t.quickStart.title}
+            </h2>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+          {/* 3 Asymmetric Column Flow with subtle hairline dividers */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 text-left">
+            {/* Step 1 */}
+            <div
+              onClick={() => onNavigate('talk')}
+              className="flex flex-col justify-between group cursor-pointer border-t border-white/[0.08] pt-6 hover:border-brand-teal-bright transition-colors"
+            >
+              <div className="space-y-3">
+                <span className="font-mono text-sm text-brand-teal-bright font-semibold">01 / {t.quickStart.step1Tag}</span>
+                <h3 className="font-editorial text-xl text-text-primary group-hover:text-brand-teal-bright transition-colors">
+                  {t.quickStart.step1Title}
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed">
+                  {t.quickStart.step1Desc}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright pt-6">
+                <span>{t.quickStart.step1Btn}</span>
+                <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">
+                  arrow_forward
+                </span>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div
+              onClick={() => onNavigate('chat')}
+              className="flex flex-col justify-between group cursor-pointer border-t border-white/[0.08] pt-6 hover:border-brand-teal-bright transition-colors"
+            >
+              <div className="space-y-3">
+                <span className="font-mono text-sm text-brand-teal-bright font-semibold">02 / {t.quickStart.step2Tag}</span>
+                <h3 className="font-editorial text-xl text-text-primary group-hover:text-brand-teal-bright transition-colors">
+                  {t.quickStart.step2Title}
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed">
+                  {t.quickStart.step2Desc}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-mono text-brand-teal-bright pt-6">
+                <span>{t.quickStart.step2Btn}</span>
+                <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">
+                  arrow_forward
+                </span>
+              </div>
+            </div>
+
+            {/* Step 3 */}
             <a
               href={discordInviteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white text-sm font-mono font-medium shadow-lg hover:shadow-[#5865F2]/25 transition-all w-full sm:w-auto"
+              className="flex flex-col justify-between group cursor-pointer border-t border-white/[0.08] pt-6 hover:border-[#7983F5] transition-colors"
             >
-              <span className="material-symbols-outlined text-[20px]">add</span>
-              <span>Add VeriVoice to Discord</span>
+              <div className="space-y-3">
+                <span className="font-mono text-sm text-[#7983F5] font-semibold">03 / {t.quickStart.step3Tag}</span>
+                <h3 className="font-editorial text-xl text-text-primary group-hover:text-[#7983F5] transition-colors">
+                  {t.quickStart.step3Title}
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed">
+                  {t.quickStart.step3Desc}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-mono text-[#7983F5] pt-6">
+                <span>{t.quickStart.step3Btn}</span>
+                <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">
+                  open_in_new
+                </span>
+              </div>
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* 3. 3D EVIDENCE CONSTELLATION SECTION */}
+      <section className="px-6 md:px-12 lg:px-16 py-16 md:py-24 max-w-[1360px] mx-auto w-full text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-5 space-y-4">
+            <span className="text-xs font-mono uppercase tracking-widest text-brand-teal-bright">
+              Mathematical Verification
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl font-medium text-text-primary">
+              Multi-source evidence convergence.
+            </h2>
+            <p className="font-sans text-sm text-text-secondary leading-relaxed">
+              VeriVoice queries international peer-reviewed consensus and authoritative government databases in parallel. When a spoken query is received, disparate sources converge to validate or refute claims with zero hallucination.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => onNavigate('methodology')}
+                className="inline-flex items-center gap-2 text-xs font-mono text-brand-teal-bright hover:underline"
+              >
+                <span>Read Verification Methodology</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 bg-surface-elevated/40 border border-white/[0.06] rounded-2xl overflow-hidden backdrop-blur-sm">
+            <EvidenceConstellation3D />
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CURATED SAMPLE CLAIMS (Clean Editorial Stream) */}
+      <section className="px-6 md:px-12 lg:px-16 py-12 max-w-[1360px] mx-auto w-full text-left">
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-6">
+          <span className="text-xs font-mono uppercase tracking-widest text-text-secondary">
+            {t.samples.title}
+          </span>
+          <span className="text-xs font-mono text-text-muted">One-click live verification</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeLanguageClaims.map((item, idx) => (
+            <div
+              key={idx}
+              onClick={() => handleSampleClick(item.text)}
+              dir={item.isRtl ? 'rtl' : 'ltr'}
+              className="p-5 border border-white/[0.06] hover:border-brand-teal-bright/40 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-tactile cursor-pointer flex flex-col justify-between gap-4 group"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="font-mono text-[10px] uppercase text-text-muted px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">
+                  {item.lang}
+                </span>
+                <VerdictBadge verdict={item.verdict} size="sm" />
+              </div>
+
+              <p
+                className={`text-text-primary leading-snug group-hover:text-brand-teal-bright transition-colors ${
+                  item.isRtl ? 'font-urdu text-lg leading-loose' : 'font-editorial text-base'
+                }`}
+              >
+                "{item.text}"
+              </p>
+
+              <div
+                className="flex items-center gap-1 text-[11px] font-mono text-text-muted group-hover:text-brand-teal-bright transition-colors pt-2 border-t border-white/[0.04]"
+                dir="ltr"
+              >
+                <span>Verify Claim</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. DISCORD COMMUNITY FOOTER BANNER */}
+      <section className="w-full bg-[#10121A] border-t border-white/[0.06] py-16 px-6 md:px-12 lg:px-16 mt-8">
+        <div className="max-w-[1360px] mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-8 text-left">
+          <div className="space-y-2 max-w-xl">
+            <span className="text-xs font-mono uppercase text-[#7983F5]">Community Intelligence</span>
+            <h3 className="font-editorial text-2xl sm:text-3xl text-text-primary">
+              Verify rumors directly on Discord.
+            </h3>
+            <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed">
+              Equip your servers with instantaneous voice and text rumor debunking using <code className="text-brand-teal-bright font-mono">/verify</code> and <code className="text-brand-teal-bright font-mono">/voice</code> commands.
+            </p>
+          </div>
+
+          <a
+            href={discordInviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-mono text-xs uppercase tracking-wider font-semibold transition-tactile flex items-center gap-2 shadow-lg shadow-[#5865F2]/20 flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span>Add VeriVoice to Discord</span>
+          </a>
         </div>
       </section>
     </div>
