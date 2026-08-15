@@ -14,13 +14,15 @@ export const AudioWavePlayer: React.FC<AudioWavePlayerProps> = ({
   autoPlay = false,
   className = '',
 }) => {
-  const { isPlaying, currentTime, duration, progress, toggle, seekPercent, error } = useAudioPlayer(audioUrl);
+  const { isPlaying, currentTime, duration, progress, play, toggle, seekPercent, error } = useAudioPlayer(audioUrl);
+  const autoPlayedUrlRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    if (autoPlay && audioUrl) {
-      toggle();
+    if (autoPlay && audioUrl && autoPlayedUrlRef.current !== audioUrl) {
+      autoPlayedUrlRef.current = audioUrl;
+      play(audioUrl);
     }
-  }, [autoPlay, audioUrl, toggle]);
+  }, [autoPlay, audioUrl, play]);
 
   if (!audioUrl) return null;
 

@@ -12,7 +12,13 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Serve static audio files from backend/tmp/
-app.use('/tmp', express.static(path.join(__dirname, '../tmp')));
+app.use('/tmp', express.static(path.join(__dirname, '../tmp'), {
+  acceptRanges: true,
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cache-Control', 'public, max-age=3600');
+  },
+}));
 
 // Serve temporary testing web frontend from backend/public/
 app.use(express.static(path.join(__dirname, '../public')));

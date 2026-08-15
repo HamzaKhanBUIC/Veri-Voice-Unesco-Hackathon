@@ -147,9 +147,12 @@ class EdgeTTSProvider extends TTSProvider {
     // 1. Try edge-tts CLI if available
     if (this.isAvailable()) {
       try {
-        const safeText = text.replace(/"/g, '\\"').replace(/\n/g, ' ');
-        const command = `edge-tts --voice "${voice}" --text "${safeText}" --write-media "${resolvedPath}"`;
-        execSync(command, { encoding: 'utf-8' });
+        const { execFileSync } = require('child_process');
+        execFileSync('edge-tts', [
+          '--voice', voice,
+          '--text', text.trim(),
+          '--write-media', resolvedPath,
+        ], { stdio: ['ignore', 'pipe', 'pipe'] });
 
         if (EdgeTTSProvider.validateAudio(resolvedPath)) {
           return {
