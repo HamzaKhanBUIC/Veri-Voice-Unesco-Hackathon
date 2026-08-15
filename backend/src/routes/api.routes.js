@@ -11,6 +11,8 @@ const RetrievalService = require('../services/retrieval/retrievalService');
 const VerificationEngine = require('../services/verification/verificationEngine');
 const GroqVerificationProvider = require('../services/verification/GroqVerificationProvider');
 const MockVerificationProvider = require('../services/verification/MockVerificationProvider');
+const { conversationManager } = require('../services/conversation/ConversationManager');
+const { validateConversationContext } = require('../schemas/conversationSchema');
 
 const tmpDir = path.join(__dirname, '../../tmp');
 if (!fs.existsSync(tmpDir)) {
@@ -47,7 +49,7 @@ if (fs.existsSync(stagingCandidatesPath)) {
 
 /**
  * POST /api/verify
- * Handles live browser voice audio & text claim verification.
+ * Handles live browser voice audio, text claims, and multi-turn conversational Talk queries.
  */
 router.post('/api/verify', async (req, res) => {
   const startTime = Date.now();
@@ -55,6 +57,19 @@ router.post('/api/verify', async (req, res) => {
   let userClaimText = req.body.claimText || null;
 
   try {
+    // 0. Validate Conversation Context if provided
+    let clientContext = null;
+    if (req.body.context) {
+      const validation = validateConversationContext(req.body.context);
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid conversation context: ${validation.errors.join('; ')}`,
+        });
+      }
+      clientContext = validation.data;
+    }
+
     // 1. Process Input Audio if Base64 provided
     let sttMs = 0;
     let transcriptText = userClaimText;
@@ -66,19 +81,37 @@ router.post('/api/verify', async (req, res) => {
       fs.writeFileSync(inputAudioPath, audioBuffer);
 
       const sttStart = Date.now();
-      let speechProvider;
+      let sttResult = null;
 
-      if (process.env.SPEECH_PROVIDER === 'speechmatics' && process.env.SPEECHMATICS_API_KEY) {
-        const SpeechmaticsProvider = require('../services/speech/SpeechmaticsProvider');
-        speechProvider = new SpeechmaticsProvider();
-      } else if (process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY) {
-        speechProvider = new WhisperProvider();
-      } else {
-        speechProvider = new MockSpeechProvider();
+      // 1. Primary STT: Groq Whisper (Ultra-fast, natively supports browser webm, auto language detection)
+      const hasGroqKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+      if (hasGroqKey && !hasGroqKey.includes('your_') && hasGroqKey !== 'placeholder') {
+        try {
+          const whisper = new WhisperProvider();
+          sttResult = await whisper.transcribe(inputAudioPath, { language: null });
+        } catch (whisperErr) {
+          console.warn(`⚠️ [API] Groq Whisper STT failed (${whisperErr.message}). Attempting Speechmatics fallback...`);
+        }
       }
 
-      const sttResult = await speechProvider.transcribe(inputAudioPath, { language: 'ur' });
-      transcriptText = sttResult.text;
+      // 2. Secondary STT: Speechmatics fallback
+      if (!sttResult && process.env.SPEECHMATICS_API_KEY && !process.env.SPEECHMATICS_API_KEY.includes('your_')) {
+        try {
+          const SpeechmaticsProvider = require('../services/speech/SpeechmaticsProvider');
+          const speechmatics = new SpeechmaticsProvider();
+          sttResult = await speechmatics.transcribe(inputAudioPath, { language: 'en' });
+        } catch (smErr) {
+          console.warn(`⚠️ [API] Speechmatics STT fallback failed: ${smErr.message}`);
+        }
+      }
+
+      // 3. Fallback to Mock if in test or offline
+      if (!sttResult) {
+        const mock = new MockSpeechProvider();
+        sttResult = await mock.transcribe(inputAudioPath, { language: 'ur' });
+      }
+
+      transcriptText = sttResult?.text;
       sttMs = Date.now() - sttStart;
     }
 
@@ -89,38 +122,91 @@ router.post('/api/verify', async (req, res) => {
       });
     }
 
-    // 2. Hybrid Evidence & Live Web Search Retrieval
-    const retrievalStart = Date.now();
-    const retrievalService = new RetrievalService();
+    // 2. Multi-Turn Conversation Routing & Context Resolution
+    const session = conversationManager.getOrCreateSession(clientContext?.sessionId, clientContext);
+    const plan = conversationManager.routeTurn(transcriptText, session, {
+      requestedMode: req.body.mode,
+    });
 
-    // Use production claims database + live web search
-    let retrievalResult = await retrievalService.search(transcriptText);
+    let retrievalMs = 0;
+    let retrievalMatches = [];
+    let verificationPayload = null;
+    let verifMs = 0;
 
-    // If production claims database is empty ([]), search staging evidence fixtures for demo
-    if ((!retrievalResult.matches || retrievalResult.matches.length === 0) && stagingEvidence.length > 0) {
-      const stagingService = new RetrievalService({ customDataset: stagingEvidence, minScoreThreshold: 1, enableLiveSearch: true });
-      retrievalResult = await stagingService.search(transcriptText);
-    }
-    const retrievalMs = Date.now() - retrievalStart;
+    // Fast-path for direct conversational responses (Session limit, Stop, Guidance)
+    if (plan.action === 'SESSION_LIMIT_REACHED' || plan.action === 'HANDLE_STOP' || plan.action === 'HANDLE_GUIDANCE') {
+      verificationPayload = {
+        verdict: plan.action === 'SESSION_LIMIT_REACHED' ? 'UNCERTAIN' : 'RESEARCH_RESPONSE',
+        confidence: 'HIGH',
+        explanation: plan.responseText,
+        evidence: [],
+      };
+    } else if (plan.reuseEvidence && plan.activeEvidence && plan.activeEvidence.length > 0) {
+      // Evidence Reuse Path: 0 new retrieval calls!
+      retrievalMatches = plan.activeEvidence.map((e) => ({
+        id: e.claimId,
+        claim: e.statement || e.sourceTitle,
+        verdict: 'TRUE',
+        explanation: e.excerpt || e.statement || e.sourceTitle,
+        sources: [{ title: e.sourceTitle, organization: e.organization, url: e.url }],
+        authorityLevel: e.authorityLevel || 'PRIMARY_AUTHORITY',
+      }));
 
-    // 3. Evidence-Grounded LLM Verification
-    const verifStart = Date.now();
-    let llmProviderInstance;
+      const verifStart = Date.now();
+      const llmProviderInstance = process.env.GROQ_API_KEY
+        ? new GroqVerificationProvider()
+        : new MockVerificationProvider();
+      const engine = new VerificationEngine({ provider: llmProviderInstance });
 
-    if (process.env.GROQ_API_KEY) {
-      llmProviderInstance = new GroqVerificationProvider();
+      verificationPayload = await engine.verifyClaim(transcriptText, retrievalMatches, {
+        targetLanguage: plan.responseLanguage,
+        voiceMode: clientContext?.voiceMode || false,
+      });
+      verifMs = Date.now() - verifStart;
+    } else if (plan.shouldRetrieve) {
+      // Fresh Verification / Retrieval Path
+      const retrievalStart = Date.now();
+      const retrievalService = new RetrievalService();
+      let retrievalResult = await retrievalService.search(transcriptText);
+
+      if ((!retrievalResult.matches || retrievalResult.matches.length === 0) && stagingEvidence.length > 0) {
+        const stagingService = new RetrievalService({ customDataset: stagingEvidence, minScoreThreshold: 1, enableLiveSearch: true });
+        retrievalResult = await stagingService.search(transcriptText);
+      }
+      retrievalMatches = retrievalResult.matches || [];
+      retrievalMs = Date.now() - retrievalStart;
+
+      const verifStart = Date.now();
+      const llmProviderInstance = process.env.GROQ_API_KEY
+        ? new GroqVerificationProvider()
+        : new MockVerificationProvider();
+      const engine = new VerificationEngine({ provider: llmProviderInstance });
+
+      verificationPayload = await engine.verifyClaim(transcriptText, retrievalMatches, {
+        targetLanguage: plan.responseLanguage,
+        voiceMode: clientContext?.voiceMode || false,
+      });
+      verifMs = Date.now() - verifStart;
     } else {
-      llmProviderInstance = new MockVerificationProvider();
+      // Casual Conversational Response (0 retrieval calls)
+      const verifStart = Date.now();
+      verificationPayload = {
+        verdict: 'RESEARCH_RESPONSE',
+        confidence: 'HIGH',
+        explanation: 'Hello! I am VeriVoice. How can I help you check evidence or explore facts today?',
+        evidence: [],
+      };
+      verifMs = Date.now() - verifStart;
     }
 
-    const engine = new VerificationEngine({ provider: llmProviderInstance });
-    const verificationPayload = await engine.verifyClaim(transcriptText, retrievalResult.matches);
-    const verifMs = Date.now() - verifStart;
+    // 3. Record turn in session context
+    conversationManager.recordTurn(session, transcriptText, verificationPayload);
 
-    // 4. Text-To-Speech Synthesis (Urdu Voice Response)
+    // 4. Text-To-Speech Synthesis (Gracefully handled)
     const ttsStart = Date.now();
     const outputAudioFilename = `output_${Date.now()}.mp3`;
     const outputAudioPath = path.join(tmpDir, outputAudioFilename);
+    let audioUrl = null;
 
     let ttsProvider;
     if (process.env.TTS_PROVIDER !== 'mock') {
@@ -129,14 +215,22 @@ router.post('/api/verify', async (req, res) => {
       ttsProvider = new MockTTSProvider();
     }
 
-    const ttsResult = await ttsProvider.synthesize(verificationPayload.explanation, outputAudioPath, {
-      voice: 'ur-PK-UzmaNeural',
-    });
+    try {
+      const ttsResult = await ttsProvider.synthesize(verificationPayload.explanation, outputAudioPath, {
+        language: plan.responseLanguage || 'ur',
+      });
+      if (ttsResult && ttsResult.outputPath) {
+        audioUrl = `/tmp/${outputAudioFilename}`;
+      }
+    } catch (ttsErr) {
+      console.warn(`⚠️ [API] Edge TTS synthesis fallback: ${ttsErr.message}`);
+      audioUrl = null;
+    }
     const ttsMs = Date.now() - ttsStart;
 
     const totalMs = Date.now() - startTime;
 
-    // Return complete interactive verification response
+    // Return complete interactive verification response with conversation metadata
     return res.json({
       success: true,
       userClaim: transcriptText,
@@ -144,8 +238,15 @@ router.post('/api/verify', async (req, res) => {
       confidence: verificationPayload.confidence,
       explanation: verificationPayload.explanation,
       evidence: verificationPayload.evidence || [],
-      retrievalMatchesCount: retrievalResult.matches ? retrievalResult.matches.length : 0,
-      audioUrl: `/tmp/${outputAudioFilename}`,
+      retrievalMatchesCount: retrievalMatches.length,
+      audioUrl,
+      conversation: {
+        sessionId: session.sessionId,
+        turnCount: session.turnCount,
+        intent: plan.intent,
+        evidenceReused: plan.reuseEvidence || false,
+        responseLanguage: plan.responseLanguage,
+      },
       timing: {
         sttMs,
         retrievalMs,
@@ -157,7 +258,7 @@ router.post('/api/verify', async (req, res) => {
       providers: {
         stt: process.env.GROQ_API_KEY ? 'Groq Whisper API' : 'Mock STT',
         llm: process.env.GROQ_API_KEY ? 'Groq Llama 3.3 70B' : 'Mock Verification',
-        tts: 'Microsoft Edge Neural TTS (ur-PK-UzmaNeural)',
+        tts: `Microsoft Edge Neural TTS (${plan.responseLanguage || 'ur'})`,
       },
     });
   } catch (err) {

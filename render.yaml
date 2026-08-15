@@ -3,14 +3,14 @@ services:
     name: verivoice
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm --prefix frontend install && npm run build:frontend
     startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: SPEECH_PROVIDER
-        value: speechmatics
+        value: whisper
       - key: TTS_PROVIDER
         value: edge-tts
       - key: LLM_PROVIDER

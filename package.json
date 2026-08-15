@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node backend/src/server.js",
     "dev": "nodemon backend/src/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm --prefix frontend run build",
     "test": "jest --detectOpenHandles",
     "doctor": "node scripts/doctor.js",
     "setup:check": "node scripts/setup-check.js",

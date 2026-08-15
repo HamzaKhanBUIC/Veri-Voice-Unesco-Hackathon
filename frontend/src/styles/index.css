@@ -1,0 +1,74 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/literata/400.css';
+@import '@fontsource/literata/500.css';
+@import '@fontsource/literata/600.css';
+@import '@fontsource/literata/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/noto-naskh-arabic/400.css';
+@import '@fontsource/noto-naskh-arabic/600.css';
+@import '@fontsource/noto-naskh-arabic/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-base: #0E0E0E;
+    --card-surface: #161616;
+    --border-color: #2A2A2A;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: #FBF9F3;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Material Symbols styling */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0E0E0E;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #44474D;
+}
+
+/* Glass Navigation Backdrop */
+.glass-nav {
+  background: rgba(14, 14, 14, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* RTL Urdu Text rules */
+[dir="rtl"] {
+  font-family: 'Noto Naskh Arabic', 'Urdu Typesetting', serif;
+  line-height: 1.85;
+}
+
+/* Restrained Transitions */
+.transition-tactile {
+  transition: all 180ms cubic-bezier(0.2, 0, 0, 1);
+}

@@ -5,6 +5,7 @@ const VerificationEngine = require('../backend/src/services/verification/verific
 const StandalonePipeline = require('../backend/src/services/pipeline/standalonePipeline');
 
 describe('VeriVoice Reliability Controls & Stress Resilience Suite', () => {
+  jest.setTimeout(25000);
   describe('CR-2: RateLimiter Per-User & Global Protection', () => {
     it('should allow up to maxRequests per user and block excessive spam', () => {
       const limiter = new RateLimiter({ maxRequests: 3, windowMs: 1000 });

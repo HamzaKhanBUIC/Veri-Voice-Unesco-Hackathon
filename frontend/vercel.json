@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://verivoice.onrender.com/api/$1"
+    },
+    {
+      "source": "/health",
+      "destination": "https://verivoice.onrender.com/health"
+    },
+    {
+      "source": "/tmp/(.*)",
+      "destination": "https://verivoice.onrender.com/tmp/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

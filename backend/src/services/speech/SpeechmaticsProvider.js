@@ -26,7 +26,16 @@ class SpeechmaticsProvider extends SpeechProvider {
 
     const audioBuffer = fs.readFileSync(audioPath);
     const fileName = path.basename(audioPath);
-    const audioBlob = new Blob([audioBuffer], { type: options.mimeType || 'audio/ogg' });
+    const ext = path.extname(audioPath).toLowerCase();
+    const mimeMap = {
+      '.webm': 'audio/webm',
+      '.ogg': 'audio/ogg',
+      '.wav': 'audio/wav',
+      '.mp3': 'audio/mpeg',
+      '.m4a': 'audio/mp4',
+    };
+    const mimeType = options.mimeType || mimeMap[ext] || 'audio/webm';
+    const audioBlob = new Blob([audioBuffer], { type: mimeType });
 
     const targetLang = (options.language && options.language !== 'auto') ? options.language : 'en';
 
