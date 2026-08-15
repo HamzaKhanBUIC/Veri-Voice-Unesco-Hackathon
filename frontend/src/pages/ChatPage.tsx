@@ -17,6 +17,7 @@ interface ChatPageProps {
 export const ChatPage: React.FC<ChatPageProps> = ({
   initialClaim = '',
   currentLanguage,
+  onNavigate,
   isServerReady = true,
 }) => {
   const t = getTranslation(currentLanguage);
@@ -206,6 +207,16 @@ export const ChatPage: React.FC<ChatPageProps> = ({
         {/* Domain Filter Bar (Hairline Divider Rhythm) */}
         <div className="px-6 py-3 border-b border-white/[0.06] flex items-center justify-between gap-4 overflow-x-auto scrollbar-hide bg-[#0E0E0E]/80 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-2">
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('landing')}
+                className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary transition-tactile flex items-center gap-1 mr-2 flex-shrink-0"
+                title="Back to Overview"
+              >
+                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Home</span>
+              </button>
+            )}
             <span className="text-[11px] font-mono uppercase text-text-muted mr-1 hidden sm:inline">
               Domain:
             </span>

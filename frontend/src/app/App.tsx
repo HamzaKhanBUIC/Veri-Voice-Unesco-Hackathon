@@ -4,15 +4,54 @@ import { LandingPage } from '../pages/LandingPage';
 import { TalkPage } from '../pages/TalkPage';
 import { ChatPage } from '../pages/ChatPage';
 import { MethodologyPage } from '../pages/MethodologyPage';
+import { UserSettingsModal, UserSettings } from '../components/settings/UserSettingsModal';
 import { apiClient } from '../services/api/ApiClient';
 import { SUPPORTED_LANGUAGES } from '../components/navigation/LanguageSelector';
 import { getTranslation } from '../i18n/translations';
 import { AppView } from '../types';
 
+const DEFAULT_SETTINGS: UserSettings = {
+  autoPlayAudio: true,
+  strictPrimaryAuthorityOnly: false,
+  voiceSpeed: 'normal',
+  highContrast: false,
+};
+
 export const App: React.FC = () => {
   const [activeView, setActiveView] = useState<AppView>('landing');
-  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
+  const [currentLanguage, setCurrentLanguage] = useState<string>(() => {
+    return localStorage.getItem('verivoice_lang') || 'en';
+  });
   const [selectedClaim, setSelectedClaim] = useState<string>('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // User Settings State with LocalStorage persistence
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    try {
+      const saved = localStorage.getItem('verivoice_user_settings');
+      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
+
+  const handleUpdateSettings = (newSettings: Partial<UserSettings>) => {
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      localStorage.setItem('verivoice_user_settings', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleLanguageChange = (lang: string) => {
+    setCurrentLanguage(lang);
+    localStorage.setItem('verivoice_lang', lang);
+  };
+
+  const handleClearHistory = () => {
+    localStorage.removeItem('verivoice_recent_queries');
+    setSelectedClaim('');
+  };
   
   // Server Health & Cold-Start Waking State
   const [serverState, setServerState] = useState<'CHECKING' | 'WAKING' | 'READY'>('CHECKING');
@@ -95,7 +134,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-surface-base text-text-primary flex flex-col font-sans selection:bg-brand-navy selection:text-brand-teal-bright">
-      {/* Fixed Glass Navigation Bar */}
+      {/* Fixed Glass Navigation Bar with Back & Settings */}
       <TopNavBar
         activeView={activeView}
         onViewChange={(view) => {
@@ -103,7 +142,8 @@ export const App: React.FC = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         currentLanguage={currentLanguage}
-        onLanguageChange={setCurrentLanguage}
+        onLanguageChange={handleLanguageChange}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       {/* 1. SERVER WAKING UP MODAL BANNER */}
@@ -210,6 +250,12 @@ export const App: React.FC = () => {
 
           <div className="flex items-center gap-6">
             <button
+              onClick={() => setActiveView('landing')}
+              className="hover:text-text-primary transition-colors uppercase"
+            >
+              Home
+            </button>
+            <button
               onClick={() => setActiveView('methodology')}
               className="hover:text-text-primary transition-colors uppercase"
             >
@@ -234,6 +280,17 @@ export const App: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* User Settings Modal */}
+      <UserSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentLanguage={currentLanguage}
+        onLanguageChange={handleLanguageChange}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        onClearHistory={handleClearHistory}
+      />
     </div>
   );
 };

@@ -18,9 +18,19 @@ export const MethodologyPage: React.FC<MethodologyPageProps> = ({
     <div className="flex flex-col gap-16 max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-16 text-left">
       {/* Header */}
       <div className="space-y-4 border-b border-white/[0.08] pb-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono uppercase tracking-widest text-text-secondary">
-          <AcousticAnchor size={12} />
-          <span>Verification Architecture & Trust Standard</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onNavigate('landing')}
+            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary transition-tactile flex items-center gap-1"
+            title="Back to Overview"
+          >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <span>Home</span>
+          </button>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono uppercase tracking-widest text-text-secondary">
+            <AcousticAnchor size={12} />
+            <span>Verification Architecture & Trust Standard</span>
+          </div>
         </div>
         <h1 className="font-editorial text-4xl sm:text-5xl font-medium text-text-primary tracking-tight">
           {t.methodology.title}

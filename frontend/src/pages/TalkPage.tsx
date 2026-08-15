@@ -234,10 +234,18 @@ export const TalkPage: React.FC<TalkPageProps> = ({
 
   return (
     <div className="flex-1 flex flex-col justify-between items-center px-6 md:px-12 py-8 max-w-4xl mx-auto w-full min-h-[calc(100vh-80px)]">
-      {/* Top Header: Minimalist telemetry */}
+      {/* Top Header: Navigation & Telemetry */}
       <div className="w-full flex items-center justify-between border-b border-white/[0.06] pb-4">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-text-secondary">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onNavigate('landing')}
+            className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary transition-tactile flex items-center gap-1.5"
+            title="Back to Overview"
+          >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <span>Home</span>
+          </button>
+          <span className="font-mono text-xs uppercase tracking-widest text-text-secondary hidden sm:inline">
             {t.talk.roomTitle}
           </span>
         </div>
