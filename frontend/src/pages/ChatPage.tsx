@@ -429,8 +429,14 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
       {/* Mobile Slide-over Sheet for Evidence */}
       {mobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-up">
-          <div className="w-full max-w-md h-full">
+        <div
+          onClick={() => setMobileDrawerOpen(false)}
+          className="lg:hidden fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-md animate-fade-up"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md h-full shadow-2xl border-l border-border-subtle"
+          >
             <EvidenceRail
               evidence={activeEvidence?.evidence || []}
               confidence={activeEvidence?.confidence || 'HIGH'}

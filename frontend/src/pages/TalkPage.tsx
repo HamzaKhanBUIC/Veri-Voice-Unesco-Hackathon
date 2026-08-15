@@ -415,8 +415,14 @@ export const TalkPage: React.FC<TalkPageProps> = ({
 
       {/* Slide-out Evidence Rail Drawer */}
       {showEvidenceDrawer && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-up">
-          <div className="w-full max-w-md h-full">
+        <div
+          onClick={() => setShowEvidenceDrawer(false)}
+          className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-md animate-fade-up"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md h-full shadow-2xl border-l border-border-subtle"
+          >
             <EvidenceRail
               evidence={currentResult?.evidence || activeEvidence || []}
               confidence={currentResult?.confidence || 'HIGH'}

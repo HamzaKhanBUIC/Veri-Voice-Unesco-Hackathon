@@ -77,7 +77,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   <span className="font-medium">{lang.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-text-muted text-[11px] font-urdu">{lang.nativeLabel}</span>
+                  <span className={`text-text-muted text-[11px] ${lang.dir === 'rtl' ? 'font-urdu text-sm' : 'font-sans'}`}>{lang.nativeLabel}</span>
                   {isSelected && (
                     <span className="material-symbols-outlined text-[15px] text-brand-teal-bright">check</span>
                   )}
