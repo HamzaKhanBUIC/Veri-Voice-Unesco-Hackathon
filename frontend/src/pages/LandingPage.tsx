@@ -207,31 +207,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 3. 3D EVIDENCE CONSTELLATION SECTION */}
+      {/* 3. 3D EVIDENCE CONSTELLATION SECTION (Full-Width Architectural Showcase) */}
       <section className="px-6 md:px-12 lg:px-16 py-16 md:py-24 max-w-[1360px] mx-auto w-full text-left">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-5 space-y-4">
+        <div className="flex flex-col gap-8">
+          <div className="max-w-3xl space-y-3">
             <span className="text-xs font-mono uppercase tracking-widest text-brand-teal-bright">
-              Mathematical Verification
+              Mathematical Verification Architecture
             </span>
-            <h2 className="font-editorial text-3xl sm:text-4xl font-medium text-text-primary">
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-medium text-text-primary">
               Multi-source evidence convergence.
             </h2>
-            <p className="font-sans text-sm text-text-secondary leading-relaxed">
-              VeriVoice queries international peer-reviewed consensus and authoritative government databases in parallel. When a spoken query is received, disparate sources converge to validate or refute claims with zero hallucination.
+            <p className="font-sans text-sm sm:text-base text-text-secondary leading-relaxed">
+              VeriVoice queries international peer-reviewed consensus and authoritative government databases in parallel. When a spoken query is received, disparate sources converge in real-time to validate or refute claims with zero hallucination.
             </p>
-            <div className="pt-2">
-              <button
-                onClick={() => onNavigate('methodology')}
-                className="inline-flex items-center gap-2 text-xs font-mono text-brand-teal-bright hover:underline"
-              >
-                <span>Read Verification Methodology</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </button>
-            </div>
           </div>
 
-          <div className="lg:col-span-7 bg-surface-elevated/40 border border-white/[0.06] rounded-2xl overflow-hidden backdrop-blur-sm">
+          <div className="w-full bg-[#12141C] border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
             <EvidenceConstellation3D />
           </div>
         </div>
