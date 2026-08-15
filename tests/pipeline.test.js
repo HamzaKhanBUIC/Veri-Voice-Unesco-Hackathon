@@ -7,8 +7,18 @@ const StandalonePipeline = require('../backend/src/services/pipeline/standaloneP
 const { cleanupTempFile } = require('../backend/src/utils/audioUtils');
 
 describe('Milestone 1 — Standalone Audio Pipeline Orchestration', () => {
-  const sampleAudio = path.join(__dirname, '../test-fixtures/audio/sample_claim_ur.ogg');
-  const tempOutputAudio = path.join(__dirname, '../test-fixtures/audio/test_output_generated.mp3');
+  const fixturesDir = path.join(__dirname, '../test-fixtures/audio');
+  const sampleAudio = path.join(fixturesDir, 'sample_claim_ur.ogg');
+  const tempOutputAudio = path.join(fixturesDir, 'test_output_generated.mp3');
+
+  beforeAll(() => {
+    if (!fs.existsSync(fixturesDir)) {
+      fs.mkdirSync(fixturesDir, { recursive: true });
+    }
+    if (!fs.existsSync(sampleAudio)) {
+      fs.writeFileSync(sampleAudio, Buffer.alloc(2048, 0x55));
+    }
+  });
 
   afterEach(() => {
     cleanupTempFile(tempOutputAudio);
