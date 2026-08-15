@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 
 interface AudioWavePlayerProps {
   audioUrl?: string | null;
+  spokenText?: string;
+  lang?: string;
   title?: string;
   autoPlay?: boolean;
   className?: string;
@@ -10,21 +12,62 @@ interface AudioWavePlayerProps {
 
 export const AudioWavePlayer: React.FC<AudioWavePlayerProps> = ({
   audioUrl,
+  spokenText,
+  lang = 'en',
   title = 'Listen to Spoken Verification Response',
   autoPlay = false,
   className = '',
 }) => {
   const { isPlaying, currentTime, duration, progress, play, toggle, seekPercent, error } = useAudioPlayer(audioUrl);
-  const autoPlayedUrlRef = React.useRef<string | null>(null);
+  const autoPlayedUrlRef = useRef<string | null>(null);
+  const [synthPlaying, setSynthPlaying] = useState(false);
 
-  React.useEffect(() => {
-    if (autoPlay && audioUrl && autoPlayedUrlRef.current !== audioUrl) {
-      autoPlayedUrlRef.current = audioUrl;
-      play(audioUrl);
+  // Browser SpeechSynthesis Fallback when no static MP3 is available
+  const speakText = (text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Set language code
+    if (lang === 'ur') utterance.lang = 'ur-PK';
+    else if (lang === 'es') utterance.lang = 'es-ES';
+    else if (lang === 'id') utterance.lang = 'id-ID';
+    else utterance.lang = 'en-US';
+
+    utterance.rate = 0.95;
+    utterance.onstart = () => setSynthPlaying(true);
+    utterance.onend = () => setSynthPlaying(false);
+    utterance.onerror = () => setSynthPlaying(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleToggleSpeech = () => {
+    if (audioUrl) {
+      toggle();
+    } else if (spokenText) {
+      if (synthPlaying) {
+        window.speechSynthesis?.cancel();
+        setSynthPlaying(false);
+      } else {
+        speakText(spokenText);
+      }
     }
-  }, [autoPlay, audioUrl, play]);
+  };
 
-  if (!audioUrl) return null;
+  useEffect(() => {
+    if (autoPlay) {
+      if (audioUrl && autoPlayedUrlRef.current !== audioUrl) {
+        autoPlayedUrlRef.current = audioUrl;
+        play(audioUrl);
+      } else if (spokenText && !audioUrl && autoPlayedUrlRef.current !== spokenText) {
+        autoPlayedUrlRef.current = spokenText;
+        speakText(spokenText);
+      }
+    }
+  }, [autoPlay, audioUrl, spokenText, play]);
+
+  const activePlaying = isPlaying || synthPlaying;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -33,10 +76,12 @@ export const AudioWavePlayer: React.FC<AudioWavePlayerProps> = ({
   };
 
   const handleBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-    seekPercent(percent);
+    if (audioUrl) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+      seekPercent(percent);
+    }
   };
 
   // 28 simulated audio waveform bars
@@ -50,47 +95,42 @@ export const AudioWavePlayer: React.FC<AudioWavePlayerProps> = ({
           <span className="text-xs font-mono uppercase tracking-wider text-text-secondary">{title}</span>
         </div>
         <div className="text-xs font-mono text-text-muted">
-          <span>{formatTime(currentTime)}</span> / <span>{formatTime(duration)}</span>
+          <span>{audioUrl ? formatTime(currentTime) : 'Voice Synth'}</span>
+          {audioUrl && <span> / {formatTime(duration)}</span>}
         </div>
       </div>
 
       <div className="flex items-center gap-4">
         {/* Play/Pause Button */}
         <button
-          onClick={toggle}
-          className="w-10 h-10 rounded-full bg-brand-navy-light text-brand-navy-deep hover:bg-white flex items-center justify-center transition-tactile flex-shrink-0 shadow"
-          aria-label={isPlaying ? 'Pause spoken response' : 'Play spoken response'}
+          onClick={handleToggleSpeech}
+          className="w-10 h-10 rounded-full bg-brand-teal hover:bg-brand-teal-dim text-white flex items-center justify-center flex-shrink-0 transition-tactile shadow-md shadow-brand-teal/20"
+          aria-label={activePlaying ? 'Pause audio' : 'Play audio'}
         >
-          <span
-            className="material-symbols-outlined text-[22px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            {isPlaying ? 'pause' : 'play_arrow'}
+          <span className="material-symbols-outlined text-[20px]">
+            {activePlaying ? 'pause' : 'play_arrow'}
           </span>
         </button>
 
-        {/* Waveform Bars Container */}
+        {/* Dynamic Waveform Visualizer */}
         <div
           onClick={handleBarClick}
-          className="flex-1 h-10 flex items-center justify-between gap-[3px] px-2 py-1 bg-surface-container rounded-lg cursor-pointer hover:bg-surface-container-high transition-colors"
-          role="slider"
-          aria-valuenow={progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Audio progress scrubber"
+          className="flex-1 h-10 flex items-center gap-1 cursor-pointer group py-1"
+          title={audioUrl ? 'Click to seek audio' : 'Audio waveform'}
         >
-          {bars.map((heightPercent, idx) => {
-            const barProgress = (idx / bars.length) * 100;
-            const isFilled = barProgress <= progress;
-
+          {bars.map((height, idx) => {
+            const isPlayed = ((idx + 1) / bars.length) * 100 <= (audioUrl ? progress : activePlaying ? ((Date.now() / 150) % 28) : 0);
             return (
               <div
                 key={idx}
-                className="w-full flex-1 rounded-full transition-all duration-150"
+                className={`flex-1 rounded-full transition-all duration-150 ${
+                  isPlayed
+                    ? 'bg-brand-teal-bright'
+                    : 'bg-white/[0.1] group-hover:bg-white/[0.2]'
+                } ${activePlaying ? 'animate-pulse' : ''}`}
                 style={{
-                  height: `${heightPercent}%`,
-                  backgroundColor: isFilled ? '#7ED4D6' : '#2A2A2A',
-                  boxShadow: isFilled && isPlaying ? '0 0 6px rgba(126,212,214,0.4)' : 'none',
+                  height: `${activePlaying ? Math.max(20, (height * ((idx % 3) + 1)) % 100) : height}%`,
+                  transitionDelay: `${idx * 10}ms`,
                 }}
               />
             );
@@ -99,7 +139,9 @@ export const AudioWavePlayer: React.FC<AudioWavePlayerProps> = ({
       </div>
 
       {error && (
-        <span className="text-xs font-mono text-verdict-false">{error}</span>
+        <span className="text-xs text-verdict-false font-mono">
+          Audio stream note: {error}
+        </span>
       )}
     </div>
   );

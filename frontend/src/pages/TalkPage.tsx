@@ -330,9 +330,11 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             </p>
 
             {/* Spoken Audio Response Player */}
-            {currentResult.audioUrl && (
+            {(currentResult.audioUrl || currentResult.explanation) && (
               <AudioWavePlayer
                 audioUrl={apiClient.resolveAudioUrl(currentResult.audioUrl)}
+                spokenText={currentResult.explanation}
+                lang={responseLanguage}
                 autoPlay={true}
                 title={`Spoken Verdict (${responseLanguage.toUpperCase()})`}
               />

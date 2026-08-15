@@ -29,3 +29,5 @@ Thumbs.db
 scratch/
 logs/
 *.log
+
+.vercel

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TopNavBar } from '../components/navigation/TopNavBar';
 import { LandingPage } from '../pages/LandingPage';
 import { TalkPage } from '../pages/TalkPage';
@@ -53,10 +53,11 @@ export const App: React.FC = () => {
     setSelectedClaim('');
   };
   
-  // Server Health & Cold-Start Waking State
-  const [serverState, setServerState] = useState<'CHECKING' | 'WAKING' | 'READY'>('CHECKING');
+  // Server Health State
+  const [serverState, setServerState] = useState<'CHECKING' | 'WAKING' | 'READY' | 'OFFLINE_READY'>('CHECKING');
   const [showReadyToast, setShowReadyToast] = useState(false);
   const [dismissNotice, setDismissNotice] = useState(false);
+  const [wakingSeconds, setWakingSeconds] = useState(0);
 
   const t = getTranslation(currentLanguage);
 
@@ -68,56 +69,49 @@ export const App: React.FC = () => {
     document.documentElement.lang = currentLanguage;
   }, [currentLanguage]);
 
-  // Robust Server Health & Active Cold-Start Poller
+  // Robust Server Health & Active Poller
+  const checkHealthStatus = useCallback(async () => {
+    const health = await apiClient.checkHealth();
+    if (health && health.status === 'ok') {
+      setServerState('READY');
+      setShowReadyToast(true);
+      setTimeout(() => setShowReadyToast(false), 3500);
+      return true;
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
-    let warmupTimeout: ReturnType<typeof setTimeout> | null = null;
+    let timerInterval: ReturnType<typeof setInterval> | null = null;
 
     const probeServer = async () => {
-      // If server takes longer than 1200ms to respond, mark as WAKING
-      warmupTimeout = setTimeout(() => {
-        if (isMounted && serverState !== 'READY') {
-          setServerState('WAKING');
-        }
-      }, 1200);
-
-      const health = await apiClient.checkHealth();
-      if (warmupTimeout) clearTimeout(warmupTimeout);
-
+      const isAlive = await checkHealthStatus();
       if (!isMounted) return;
 
-      if (health && health.status === 'ok') {
-        setServerState((prev) => {
-          if (prev === 'WAKING') {
-            setShowReadyToast(true);
-            setTimeout(() => {
-              if (isMounted) setShowReadyToast(false);
-            }, 3500);
-          }
-          return 'READY';
-        });
-        if (pollInterval) {
-          clearInterval(pollInterval);
-          pollInterval = null;
-        }
-      } else {
+      if (!isAlive) {
         setServerState('WAKING');
-        // Start high-frequency retry polling every 2.5s until alive
-        if (!pollInterval) {
-          pollInterval = setInterval(async () => {
-            const retryHealth = await apiClient.checkHealth();
-            if (!isMounted) return;
-            if (retryHealth && retryHealth.status === 'ok') {
-              setServerState('READY');
-              setShowReadyToast(true);
-              setTimeout(() => {
-                if (isMounted) setShowReadyToast(false);
-              }, 3500);
-              if (pollInterval) clearInterval(pollInterval);
+
+        // Track seconds
+        timerInterval = setInterval(() => {
+          setWakingSeconds((prev) => {
+            if (prev >= 12 && serverState === 'WAKING') {
+              // After 12s of waiting for unconfigured cloud instance, enable client resilience mode
+              setServerState('OFFLINE_READY');
             }
-          }, 2500);
-        }
+            return prev + 1;
+          });
+        }, 1000);
+
+        // High frequency retry polling every 3s
+        pollInterval = setInterval(async () => {
+          const aliveNow = await checkHealthStatus();
+          if (aliveNow && isMounted) {
+            if (pollInterval) clearInterval(pollInterval);
+            if (timerInterval) clearInterval(timerInterval);
+          }
+        }, 3000);
       }
     };
 
@@ -125,12 +119,12 @@ export const App: React.FC = () => {
 
     return () => {
       isMounted = false;
-      if (warmupTimeout) clearTimeout(warmupTimeout);
       if (pollInterval) clearInterval(pollInterval);
+      if (timerInterval) clearInterval(timerInterval);
     };
-  }, []);
+  }, [checkHealthStatus]);
 
-  const isServerReady = serverState === 'READY';
+  const isServerReady = serverState === 'READY' || serverState === 'OFFLINE_READY';
 
   return (
     <div className="min-h-screen bg-surface-base text-text-primary flex flex-col font-sans selection:bg-brand-navy selection:text-brand-teal-bright">
@@ -157,7 +151,7 @@ export const App: React.FC = () => {
                   <span className="text-amber-400 font-semibold uppercase tracking-wider text-[11px]">
                     {t.serverNotice.wakingTitle}
                   </span>
-                  <span className="text-text-muted text-[10px] hidden sm:inline">• Cold Start (~15–30s)</span>
+                  <span className="text-text-muted text-[10px] hidden sm:inline">• Connecting ({wakingSeconds}s / 15s)</span>
                 </div>
                 <p className="text-text-secondary font-sans text-xs max-w-2xl leading-normal">
                   {t.serverNotice.wakingDesc}
@@ -166,10 +160,15 @@ export const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="hidden md:flex items-center gap-2 text-brand-teal-bright">
-                <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
-                <span className="text-[11px] font-mono">Connecting...</span>
-              </div>
+              <button
+                onClick={() => {
+                  setServerState('OFFLINE_READY');
+                  setDismissNotice(true);
+                }}
+                className="px-2.5 py-1 bg-white/[0.08] hover:bg-white/[0.15] text-text-primary rounded-lg text-[11px] font-mono transition-tactile"
+              >
+                Use Demo Mode
+              </button>
               <button
                 onClick={() => setDismissNotice(true)}
                 className="p-1.5 hover:bg-white/[0.08] rounded-lg text-text-muted hover:text-text-primary transition-colors"
@@ -183,7 +182,7 @@ export const App: React.FC = () => {
 
           {/* Subtly animated connection progress bar */}
           <div className="w-full h-0.5 bg-white/[0.06] mt-2 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-amber-400 via-brand-teal-bright to-amber-400 w-1/2 rounded-full animate-pulse" />
+            <div className="h-full bg-gradient-to-r from-amber-400 via-brand-teal-bright to-amber-400 w-3/4 rounded-full animate-pulse" />
           </div>
         </div>
       )}
@@ -290,6 +289,7 @@ export const App: React.FC = () => {
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
         onClearHistory={handleClearHistory}
+        onBackendUrlChanged={() => checkHealthStatus()}
       />
     </div>
   );

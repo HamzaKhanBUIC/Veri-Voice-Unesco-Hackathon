@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SUPPORTED_LANGUAGES } from '../navigation/LanguageSelector';
+import { apiClient } from '../../services/api/ApiClient';
 
 export interface UserSettings {
   autoPlayAudio: boolean;
@@ -16,6 +17,7 @@ interface UserSettingsModalProps {
   settings: UserSettings;
   onUpdateSettings: (newSettings: Partial<UserSettings>) => void;
   onClearHistory?: () => void;
+  onBackendUrlChanged?: () => void;
 }
 
 export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
@@ -26,8 +28,19 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
   settings,
   onUpdateSettings,
   onClearHistory,
+  onBackendUrlChanged,
 }) => {
+  const [backendUrl, setBackendUrl] = useState<string>(() => apiClient.getResolvedBaseUrl());
+
   if (!isOpen) return null;
+
+  const handleSave = () => {
+    apiClient.setCustomBaseUrl(backendUrl);
+    if (onBackendUrlChanged) {
+      onBackendUrlChanged();
+    }
+    onClose();
+  };
 
   return (
     <div
@@ -137,7 +150,24 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
           </div>
         </div>
 
-        {/* 3. Session & Privacy */}
+        {/* 3. Backend Endpoint Setting */}
+        <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+          <label className="text-xs font-mono uppercase tracking-widest text-text-secondary block">
+            Backend Server Endpoint (Optional)
+          </label>
+          <p className="text-xs text-text-muted">
+            Connect to your live Render backend or local instance (e.g. <code className="text-brand-teal-bright font-mono">http://localhost:3000</code>).
+          </p>
+          <input
+            type="text"
+            value={backendUrl}
+            onChange={(e) => setBackendUrl(e.target.value)}
+            placeholder="e.g. http://localhost:3000 or https://your-backend.onrender.com"
+            className="w-full bg-white/[0.04] border border-white/[0.1] focus:border-brand-teal-bright rounded-xl px-3.5 py-2.5 text-xs font-mono text-text-primary focus:outline-none placeholder:text-text-muted"
+          />
+        </div>
+
+        {/* 4. Session & Privacy */}
         <div className="space-y-3 pt-2 border-t border-white/[0.06]">
           <label className="text-xs font-mono uppercase tracking-widest text-text-secondary block">
             Privacy & Conversation History
@@ -161,7 +191,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
         {/* Footer Done Button */}
         <div className="pt-4 border-t border-white/[0.08] flex justify-end">
           <button
-            onClick={onClose}
+            onClick={handleSave}
             className="px-6 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-teal-dim text-white font-mono text-xs uppercase tracking-wider font-semibold transition-tactile"
           >
             Save & Close

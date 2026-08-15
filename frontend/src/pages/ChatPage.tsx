@@ -319,9 +319,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                       </p>
 
                       {/* Audio Response Player */}
-                      {msg.audioUrl && (
+                      {(msg.audioUrl || msg.explanation) && (
                         <AudioWavePlayer
                           audioUrl={apiClient.resolveAudioUrl(msg.audioUrl)}
+                          spokenText={msg.explanation || msg.text}
+                          lang={currentLanguage}
                           title="Spoken Verification"
                         />
                       )}
