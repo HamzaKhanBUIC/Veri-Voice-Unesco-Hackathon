@@ -67,7 +67,18 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         </nav>
 
         {/* Right: Actions, Language & Status */}
-        <div className="flex items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2.5 md:gap-3">
+          <a
+            href="https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=3147776&scope=bot%20applications.commands"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Invite VeriVoice Discord Bot"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5865F2]/15 hover:bg-[#5865F2]/25 text-[#7983F5] hover:text-white border border-[#5865F2]/30 text-xs font-mono transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">forum</span>
+            <span className="hidden lg:inline">Discord Bot</span>
+          </a>
+
           <div className="hidden sm:block">
             <StatusIndicator status={systemStatus} />
           </div>
