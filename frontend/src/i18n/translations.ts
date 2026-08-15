@@ -65,6 +65,13 @@ export interface TranslationSchema {
     domainClimate: string;
     domainDisaster: string;
   };
+  serverNotice: {
+    wakingTitle: string;
+    wakingDesc: string;
+    readyTitle: string;
+    readyDesc: string;
+    pleaseWait: string;
+  };
   methodology: {
     title: string;
     subtitle: string;
@@ -151,6 +158,13 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainScience: 'Science & Astronomy',
       domainClimate: 'Climate & Weather',
       domainDisaster: 'Disaster Warnings',
+    },
+    serverNotice: {
+      wakingTitle: 'Cloud Engine Waking Up',
+      wakingDesc: 'Our cloud verification server is starting up from sleep mode (~15-30s). Please wait a moment before speaking or submitting inquiries.',
+      readyTitle: 'Server Online & Ready',
+      readyDesc: 'Cloud verification engine is active and ready for inquiries.',
+      pleaseWait: 'Waiting for cloud server to wake up (~15-30s)...',
     },
     methodology: {
       title: 'Grounding & Evidence Methodology',
@@ -241,6 +255,13 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainClimate: 'موسمیات و ماحولیات',
       domainDisaster: 'آفات کی انتباہ',
     },
+    serverNotice: {
+      wakingTitle: 'کلاؤڈ سرور شروع ہو رہا ہے',
+      wakingDesc: 'ویری وائس کا کلاؤڈ انجن نیند کی حالت سے بیدار ہو رہا ہے (~15-30 سیکنڈ)۔ بولنے یا سوال پوچھنے سے قبل براہ کرم کچھ دیر انتظار فرمائیں۔',
+      readyTitle: 'سرور تیار ہے',
+      readyDesc: 'کلاؤڈ تصدیقی انجن مکمل طور پر فعال اور تیار ہے۔',
+      pleaseWait: 'سرور کے بیدار ہونے کا انتظار فرمائیں (~15-30 سیکنڈ)...',
+    },
     methodology: {
       title: 'شواہد اور تصدیق کا سائنسی طریقہ کار',
       subtitle:
@@ -330,6 +351,13 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainClimate: 'Clima y Medio Ambiente',
       domainDisaster: 'Alertas de Desastres',
     },
+    serverNotice: {
+      wakingTitle: 'Servidor en la Nube Iniciándose',
+      wakingDesc: 'Nuestro motor de verificación en la nube se está iniciando del modo de reposo (~15-30s). Por favor espere un momento antes de hablar o consultar.',
+      readyTitle: 'Servidor en Línea y Listo',
+      readyDesc: 'El motor de verificación está activo y listo para sus consultas.',
+      pleaseWait: 'Esperando a que el servidor en la nube se active (~15-30s)...',
+    },
     methodology: {
       title: 'Metodología de Evidencia y Validación',
       subtitle:
@@ -418,6 +446,13 @@ export const translations: Record<LanguageCode, TranslationSchema> = {
       domainScience: 'Sains & Alam',
       domainClimate: 'Iklim & Cuaca',
       domainDisaster: 'Peringatan Bencana',
+    },
+    serverNotice: {
+      wakingTitle: 'Server Cloud Sedang Memuat',
+      wakingDesc: 'Mesin verifikasi cloud kami sedang menyala dari mode tidur (~15-30 detik). Mohon tunggu sejenak sebelum berbicara atau mencari.',
+      readyTitle: 'Server Online & Siap',
+      readyDesc: 'Mesin verifikasi cloud sudah aktif dan siap untuk digunakan.',
+      pleaseWait: 'Menunggu server cloud aktif (~15-30 detik)...',
     },
     methodology: {
       title: 'Metodologi Bukti & Validasi',

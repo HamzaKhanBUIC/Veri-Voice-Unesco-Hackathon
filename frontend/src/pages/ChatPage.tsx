@@ -11,11 +11,13 @@ interface ChatPageProps {
   initialClaim?: string;
   currentLanguage: string;
   onNavigate?: (view: AppView) => void;
+  isServerReady?: boolean;
 }
 
 export const ChatPage: React.FC<ChatPageProps> = ({
   initialClaim = '',
   currentLanguage,
+  isServerReady = true,
 }) => {
   const t = getTranslation(currentLanguage);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -378,7 +380,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={t.chat.placeholder}
+              placeholder={!isServerReady ? t.serverNotice.pleaseWait : t.chat.placeholder}
               disabled={isLoading || isRecording}
               className="flex-1 bg-transparent border-none text-text-primary font-sans text-sm sm:text-base px-3 py-2 focus:outline-none placeholder:text-text-muted"
             />

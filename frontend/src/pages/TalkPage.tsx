@@ -18,18 +18,20 @@ import {
 interface TalkPageProps {
   onNavigate: (view: AppView) => void;
   currentLanguage: string;
+  isServerReady?: boolean;
 }
 
 export const TalkPage: React.FC<TalkPageProps> = ({
   onNavigate,
   currentLanguage,
+  isServerReady = true,
 }) => {
   const t = getTranslation(currentLanguage);
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
   const [currentResult, setCurrentResult] = useState<VerifyResponse | null>(null);
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
-  const [statusMessage, setStatusMessage] = useState(t.talk.tapToSpeak);
+  const [statusMessage, setStatusMessage] = useState(!isServerReady ? t.serverNotice.pleaseWait : t.talk.tapToSpeak);
 
   // Multi-Turn Conversational Session State
   const [sessionId, setSessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
@@ -39,13 +41,13 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const [activeClaim, setActiveClaim] = useState<string>('');
   const [responseLanguage, setResponseLanguage] = useState<string>(currentLanguage || 'en');
 
-  // Sync language changes
+  // Sync language or server readiness changes
   useEffect(() => {
     setResponseLanguage(currentLanguage);
     if (voiceState === 'IDLE') {
-      setStatusMessage(t.talk.tapToSpeak);
+      setStatusMessage(!isServerReady ? t.serverNotice.pleaseWait : t.talk.tapToSpeak);
     }
-  }, [currentLanguage]);
+  }, [currentLanguage, isServerReady]);
 
   // Ref to stop active audio on barge-in
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
