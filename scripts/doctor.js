@@ -64,13 +64,6 @@ console.log(`[+] DISCORD_BOT_TOKEN:      ${discordToken}`);
 console.log(`[+] DISCORD_APPLICATION_ID: ${discordAppId}`);
 console.log(`[+] DISCORD_GUILD_ID:        ${discordGuildId}`);
 
-// 6. WhatsApp Integration Status (Optional / Future Adapter)
-const waToken = process.env.WHATSAPP_TOKEN ? 'PRESENT (Configured)' : 'MISSING';
-const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID ? 'PRESENT (Configured)' : 'MISSING';
-
-console.log(`\n--- WhatsApp Integration (Optional / Future Adapter) ---`);
-console.log(`[+] WHATSAPP_TOKEN:            ${waToken}`);
-console.log(`[+] WHATSAPP_PHONE_NUMBER_ID:  ${waPhoneId}`);
 
 // 7. Overall Readiness Summary
 console.log('\n====================================================');

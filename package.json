@@ -1,7 +1,7 @@
 {
   "name": "verivoice",
   "version": "0.1.0",
-  "description": "VeriVoice - WhatsApp voice-based claim verification prototype for Urdu health rumors",
+  "description": "VeriVoice - Instant Voice-First Multilingual Claim Verification Engine for Health & Climate Rumors",
   "main": "backend/src/server.js",
   "scripts": {
     "start": "node backend/src/server.js",
@@ -20,9 +20,10 @@
   "keywords": [
     "verivoice",
     "fact-checking",
-    "whatsapp",
+    "multilingual",
     "urdu",
-    "health"
+    "health",
+    "voice"
   ],
   "author": "VeriVoice Team",
   "license": "ISC",

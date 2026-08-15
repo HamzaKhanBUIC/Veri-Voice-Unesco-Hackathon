@@ -8,12 +8,6 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.string().default('info'),
 
-  // WhatsApp Configuration
-  WHATSAPP_TOKEN: z.string().default(''),
-  WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
-  WHATSAPP_VERIFY_TOKEN: z.string().default('verivoice_webhook_verify_token'),
-  WHATSAPP_API_VERSION: z.string().default('v19.0'),
-
   // Speech & LLM API Keys
   GROQ_API_KEY: z.string().default(''),
   OPENAI_API_KEY: z.string().default(''),

@@ -3,7 +3,7 @@ const RetrievalService = require('../backend/src/services/retrieval/retrievalSer
 
 describe('Milestone 2 — Deterministic Retrieval Engine', () => {
   const fixturePath = path.resolve(__dirname, '../test-fixtures/claims.test-fixture.json');
-  const emptyProductionPath = path.resolve(__dirname, '../knowledge/claims.json');
+  const emptyProductionPath = path.resolve(__dirname, '../test-fixtures/empty.json');
 
   describe('Retrieval with Test Fixtures (Non-Medical)', () => {
     let retrieval;

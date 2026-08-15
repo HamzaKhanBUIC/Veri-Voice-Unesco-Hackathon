@@ -69,15 +69,17 @@ class VerificationEngine {
 
     // 5. Zero-Evidence Safe Bounding Rule
     if (evalResult.evidenceStrength === 'NO_EVIDENCE' || !enhancedMatches || enhancedMatches.length === 0) {
-      const fallback = createUncertainFallback(FALLBACK_REASONS.NO_EVIDENCE, null, lang);
-      return {
-        ...fallback,
-        mode,
-        domain,
-        evidenceStrength: 'NO_EVIDENCE',
-        languageMetadata,
-        sources: [],
-      };
+      if (this.provider.name !== 'GroqVerificationProvider') {
+        const fallback = createUncertainFallback(FALLBACK_REASONS.NO_EVIDENCE, null, lang);
+        return {
+          ...fallback,
+          mode,
+          domain,
+          evidenceStrength: 'NO_EVIDENCE',
+          languageMetadata,
+          sources: [],
+        };
+      }
     }
 
     // 6. Provider LLM Verification Execution

@@ -59,7 +59,7 @@ class MockVerificationProvider extends VerificationProvider {
       return JSON.stringify({
         verdict: 'UNCERTAIN',
         confidence: 0.0,
-        explanation: 'اس دعوے کے لیے کوئی معتبر مواد موجود نہیں ہے۔',
+        explanation: 'اس دعوے کے بارے میں دستیاب معتبر معلومات حتمی فیصلہ کرنے کے لیے کافی نہیں ہیں۔',
         evidence: [],
       });
     }

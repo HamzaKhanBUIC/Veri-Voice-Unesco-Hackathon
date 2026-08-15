@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const healthRoutes = require('./routes/health.routes');
-const whatsappRoutes = require('./routes/whatsapp.routes');
 const apiRoutes = require('./routes/api.routes');
 
 const app = express();
@@ -20,14 +20,11 @@ app.use('/tmp', express.static(path.join(__dirname, '../tmp'), {
   },
 }));
 
-// Serve temporary testing web frontend from backend/public/
+// Serve web frontend from backend/public/
 app.use(express.static(path.join(__dirname, '../public')));
-
-const fs = require('fs');
 
 // Core API routes
 app.use('/', healthRoutes);
-app.use('/', whatsappRoutes);
 app.use('/', apiRoutes);
 
 // SPA fallback for HTML page requests on client-side routes (e.g. /talk, /chat, /methodology)
