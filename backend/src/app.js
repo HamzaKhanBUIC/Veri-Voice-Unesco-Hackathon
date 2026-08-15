@@ -17,12 +17,25 @@ app.use('/tmp', express.static(path.join(__dirname, '../tmp')));
 // Serve temporary testing web frontend from backend/public/
 app.use(express.static(path.join(__dirname, '../public')));
 
+const fs = require('fs');
+
 // Core API routes
 app.use('/', healthRoutes);
 app.use('/', whatsappRoutes);
 app.use('/', apiRoutes);
 
-// Catch-all 404 handler
+// SPA fallback for HTML page requests (e.g. /talk, /chat, /methodology)
+app.get('*', (req, res, next) => {
+  if (req.accepts('html')) {
+    const indexPath = path.join(__dirname, '../public/index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+  }
+  next();
+});
+
+// Catch-all 404 handler for unmatched API requests
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
