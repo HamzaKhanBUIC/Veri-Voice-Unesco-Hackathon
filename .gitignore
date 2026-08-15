@@ -16,6 +16,8 @@ tmp/
 *.wav
 *.ogg
 *.m4a
+!test-fixtures/**
+
 
 # OS & IDE
 .DS_Store

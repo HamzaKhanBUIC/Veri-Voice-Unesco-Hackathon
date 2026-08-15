@@ -4,10 +4,28 @@ const { validateAudioFile, checkFFmpegAvailability, cleanupTempFile } = require(
 const EdgeTTSProvider = require('../backend/src/services/tts/EdgeTTSProvider');
 
 describe('Milestone 1 — Audio Handling & Validation Utility', () => {
-  const sampleAudio = path.join(__dirname, '../test-fixtures/audio/sample_claim_ur.ogg');
-  const emptyAudio = path.join(__dirname, '../test-fixtures/audio/empty_audio.ogg');
-  const txtFile = path.join(__dirname, '../test-fixtures/audio/unsupported_format.txt');
-  const nonExistentFile = path.join(__dirname, '../test-fixtures/audio/does_not_exist.ogg');
+  const fixturesDir = path.join(__dirname, '../test-fixtures/audio');
+  const sampleAudio = path.join(fixturesDir, 'sample_claim_ur.ogg');
+  const emptyAudio = path.join(fixturesDir, 'empty_audio.ogg');
+  const txtFile = path.join(fixturesDir, 'unsupported_format.txt');
+  const nonExistentFile = path.join(fixturesDir, 'does_not_exist.ogg');
+
+  beforeAll(() => {
+    if (!fs.existsSync(fixturesDir)) {
+      fs.mkdirSync(fixturesDir, { recursive: true });
+    }
+    if (!fs.existsSync(sampleAudio)) {
+      // Create a valid dummy audio file (> 1000 bytes with non-mock header)
+      const buf = Buffer.alloc(2048, 0x55);
+      fs.writeFileSync(sampleAudio, buf);
+    }
+    if (!fs.existsSync(emptyAudio)) {
+      fs.writeFileSync(emptyAudio, Buffer.alloc(0));
+    }
+    if (!fs.existsSync(txtFile)) {
+      fs.writeFileSync(txtFile, 'plain text content');
+    }
+  });
 
   it('should validate a valid audio file (.ogg)', () => {
     const result = validateAudioFile(sampleAudio);
