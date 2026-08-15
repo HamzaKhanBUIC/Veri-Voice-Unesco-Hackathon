@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '../components/ui/Button';
-import { AcousticCore } from '../components/voice/AcousticCore';
 import { VerdictBadge } from '../components/ui/VerdictBadge';
 import { AcousticAnchor } from '../components/brand/AcousticAnchor';
 import { getTranslation } from '../i18n/translations';
@@ -17,7 +16,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectSampleClaim,
   currentLanguage = 'en',
 }) => {
-  const [demoState, setDemoState] = useState<'IDLE' | 'LISTENING' | 'CHECKING' | 'RESPONDING'>('RESPONDING');
   const t = getTranslation(currentLanguage);
 
   const sampleClaims = [
@@ -215,108 +213,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 4. INTERACTIVE LIVE PRODUCT CANVAS PREVIEW */}
-      <section className="px-4 md:px-8 max-w-[1200px] mx-auto w-full">
-        <div className="bg-surface-elevated border border-border-subtle rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden flex flex-col items-center gap-8">
-          {/* Top Controls */}
-          <div className="w-full flex flex-wrap items-center justify-between border-b border-border-subtle pb-4 text-xs font-mono text-text-muted gap-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-verdict-true" />
-              <span className="uppercase tracking-wider">Acoustic Core Interaction Preview</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {(['IDLE', 'LISTENING', 'CHECKING', 'RESPONDING'] as const).map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setDemoState(st)}
-                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-mono transition-colors ${
-                    demoState === st ? 'bg-brand-teal text-white font-semibold' : 'bg-surface-container hover:bg-surface-container-high text-text-secondary'
-                  }`}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Central Acoustic Core */}
-          <AcousticCore
-            state={demoState}
-            volumeLevel={demoState === 'LISTENING' ? 0.65 : 0}
-            size="lg"
-            onClick={() => {
-              const nextState =
-                demoState === 'IDLE' ? 'LISTENING' :
-                demoState === 'LISTENING' ? 'CHECKING' :
-                demoState === 'CHECKING' ? 'RESPONDING' : 'IDLE';
-              setDemoState(nextState);
-            }}
-          />
-
-          {/* Verification Dossier Result */}
-          <div className="w-full max-w-3xl flex flex-col gap-4 text-left">
-            <div className="flex justify-end">
-              <div className="bg-surface-container-high px-5 py-3 rounded-xl border border-border-subtle text-text-primary text-sm sm:text-base font-sans">
-                "Are polio drops safe for infants?"
-              </div>
-            </div>
-
-            {demoState === 'CHECKING' && (
-              <div className="flex flex-col gap-2 p-4 bg-surface-container rounded-lg border border-border-subtle animate-fade-up">
-                <div className="flex justify-between items-center text-xs font-mono text-brand-teal-bright">
-                  <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                    Cross-referencing WHO & CDC repositories...
-                  </span>
-                  <span>0.8s</span>
-                </div>
-                <div className="w-full h-1 bg-surface-base rounded-full overflow-hidden">
-                  <div className="h-full bg-brand-teal-bright animate-pulse w-3/4 rounded-full" />
-                </div>
-              </div>
-            )}
-
-            {demoState === 'RESPONDING' && (
-              <div className="bg-surface-container-low p-6 rounded-xl border-l-4 border-l-verdict-true border border-border-subtle shadow-lg flex flex-col gap-4 animate-fade-up">
-                <div className="flex items-center justify-between">
-                  <VerdictBadge verdict="TRUE" size="md" />
-                  <span className="text-xs font-mono text-brand-teal-bright bg-surface-container px-2.5 py-1 rounded border border-border-subtle">
-                    HIGH CONFIDENCE (98%)
-                  </span>
-                </div>
-
-                <p className="font-editorial text-base sm:text-lg text-text-primary leading-relaxed">
-                  Yes, polio drops (OPV) are safe and essential for protecting children from lifelong paralysis. Global health authorities confirm rigorous safety monitoring across millions of doses.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border-subtle">
-                  <span className="text-[11px] font-mono uppercase text-text-muted">Cited Sources:</span>
-                  <a
-                    href="https://www.who.int"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-brand-teal-bright text-xs font-mono rounded border border-border-subtle flex items-center gap-1"
-                  >
-                    <span>WHO.INT</span>
-                    <span className="material-symbols-outlined text-[13px]">open_in_new</span>
-                  </a>
-                  <a
-                    href="https://www.cdc.gov"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-brand-teal-bright text-xs font-mono rounded border border-border-subtle flex items-center gap-1"
-                  >
-                    <span>CDC.GOV</span>
-                    <span className="material-symbols-outlined text-[13px]">open_in_new</span>
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. DISCORD BOT COMMUNITY BANNER */}
+      {/* 4. DISCORD BOT COMMUNITY BANNER */}
       <section className="px-4 md:px-8 max-w-[1200px] mx-auto w-full">
         <div className="bg-gradient-to-r from-surface-elevated to-[#5865F2]/10 border border-[#5865F2]/30 rounded-2xl p-6 sm:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="flex flex-col gap-3 max-w-xl text-left">
