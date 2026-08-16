@@ -47,38 +47,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div className="flex flex-col w-full">
       {/* 1. EDITORIAL ASYMMETRIC HERO */}
-      <section className="relative px-6 md:px-12 lg:px-16 pt-8 md:pt-16 pb-20 max-w-[1360px] mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <section className="relative px-6 md:px-12 lg:px-16 pt-10 md:pt-18 pb-20 max-w-[1360px] mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
           {/* Left Column: Authoritative Editorial Statement */}
           <div className="lg:col-span-7 flex flex-col items-start text-left gap-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono uppercase tracking-widest text-text-secondary">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-brand-teal/10 border border-brand-teal/30 text-xs font-mono uppercase tracking-wider text-brand-teal-bright backdrop-blur-md">
               <AcousticAnchor size={12} pulse />
               <span>{t.hero.tagline}</span>
             </div>
 
-            <h1 className="font-editorial text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-medium tracking-tight text-text-primary leading-[1.1] max-w-[720px]">
+            <h1 className="font-editorial text-5xl sm:text-6xl lg:text-[68px] font-normal tracking-tight text-white leading-[1.08] max-w-[720px]">
               {t.hero.headline}
             </h1>
 
-            <p className="font-sans text-base sm:text-lg text-text-secondary max-w-[580px] leading-relaxed">
+            <p className="font-sans text-base sm:text-lg text-text-secondary max-w-[600px] leading-relaxed font-light">
               {t.hero.subheadline}
             </p>
 
-            {/* Action CTAs (Restrained & Tactile) */}
-            <div className="flex flex-wrap items-center gap-3 pt-2 w-full">
+            {/* Action CTAs (Tactile & Prominent) */}
+            <div className="flex flex-wrap items-center gap-3.5 pt-2 w-full">
               <button
                 onClick={() => onNavigate('talk')}
-                className="px-6 py-3.5 rounded-xl bg-brand-teal hover:bg-brand-teal-dim text-white font-mono text-xs uppercase tracking-wider font-semibold transition-tactile flex items-center gap-2 shadow-lg shadow-brand-teal/20"
+                className="px-7 py-3.5 rounded-xl bg-brand-teal hover:bg-brand-teal-dim text-white font-mono text-xs uppercase tracking-wider font-semibold transition-tactile flex items-center gap-2.5 shadow-xl shadow-brand-teal/25 hover:shadow-brand-teal/40 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <span className="material-symbols-outlined text-[18px]">mic</span>
+                <span className="material-symbols-outlined text-[20px]">mic</span>
                 <span>{t.hero.startTalk}</span>
               </button>
 
               <button
                 onClick={() => onNavigate('chat')}
-                className="px-6 py-3.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-text-primary border border-white/[0.1] font-mono text-xs uppercase tracking-wider font-medium transition-tactile flex items-center gap-2"
+                className="px-6 py-3.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-text-primary border border-white/[0.12] hover:border-white/[0.2] font-mono text-xs uppercase tracking-wider font-medium transition-tactile flex items-center gap-2 backdrop-blur-sm hover:scale-[1.01]"
               >
-                <span className="material-symbols-outlined text-[18px]">search</span>
+                <span className="material-symbols-outlined text-[18px] text-text-secondary">search</span>
                 <span>{t.hero.searchResearch}</span>
               </button>
 
@@ -86,40 +86,92 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 href={discordInviteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-3.5 rounded-xl bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#7983F5] hover:text-white border border-[#5865F2]/30 font-mono text-xs uppercase tracking-wider transition-tactile flex items-center gap-2"
+                className="px-5 py-3.5 rounded-xl bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#7983F5] hover:text-white border border-[#5865F2]/30 font-mono text-xs uppercase tracking-wider transition-tactile flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">forum</span>
                 <span>Discord</span>
               </a>
             </div>
 
-            {/* Subtle Metadata Telemetry */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-xs font-mono text-text-muted border-t border-white/[0.06] w-full max-w-[620px]">
-              <span className="text-brand-teal-bright">⚡ Latency: &lt;1.8s Spoken Response</span>
-              <span>•</span>
-              <span>🏛️ Consensus: WHO · NASA · IPCC · UNESCO</span>
-              <span>•</span>
-              <span>🔒 0% Hallucination Bounded</span>
-              <span>•</span>
-              <span>🌐 Urdu · English · Spanish · Indonesian</span>
+            {/* Quick One-Tap Demo Inquiries */}
+            <div className="flex flex-col gap-2 pt-1 w-full max-w-[620px]">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-text-muted">
+                ⚡ Quick Demo Inquiries (Tap to Test)
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {activeLanguageClaims.slice(0, 4).map((claim, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSampleClick(claim.text)}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] hover:border-brand-teal/50 text-text-secondary hover:text-white text-xs font-sans transition-tactile flex items-center gap-1.5 group"
+                  >
+                    <span className="font-mono text-[10px] text-brand-teal-bright uppercase">{claim.lang}</span>
+                    <span className="truncate max-w-[190px]">{claim.text}</span>
+                    <span className="material-symbols-outlined text-[12px] text-text-muted group-hover:text-brand-teal-bright transition-colors">arrow_forward</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Clean 4-Card Trust & Telemetry Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/[0.08] w-full max-w-[620px]">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col text-left">
+                <span className="text-[10px] font-mono uppercase text-brand-teal-bright">⚡ Latency</span>
+                <span className="text-xs font-medium text-text-primary mt-0.5">&lt;1.8s Spoken</span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col text-left">
+                <span className="text-[10px] font-mono uppercase text-brand-teal-bright">🏛️ Consensus</span>
+                <span className="text-xs font-medium text-text-primary mt-0.5">WHO · NASA · UN</span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col text-left">
+                <span className="text-[10px] font-mono uppercase text-brand-teal-bright">🔒 Bounded</span>
+                <span className="text-xs font-medium text-text-primary mt-0.5">0% Hallucination</span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col text-left">
+                <span className="text-[10px] font-mono uppercase text-brand-teal-bright">🌐 Languages</span>
+                <span className="text-xs font-medium text-text-primary mt-0.5">UR · EN · ES · ID</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Column: Hero Acoustic Core (Main Visual Signature) */}
+          {/* Right Column: Hero Acoustic Core (Interactive Glass Sanctuary Card) */}
           <div className="lg:col-span-5 flex flex-col items-center justify-center relative">
-            <div className="relative p-6 sm:p-8 flex items-center justify-center">
-              {/* Soft background ambient radial diffusion */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-brand-navy/30 via-brand-teal/15 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
-              
-              <AcousticCore
-                state="IDLE"
-                size="lg"
-                onClick={() => onNavigate('talk')}
-              />
+            <div
+              onClick={() => onNavigate('talk')}
+              className="w-full max-w-[420px] p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.1] hover:border-brand-teal/50 shadow-2xl backdrop-blur-xl transition-tactile cursor-pointer flex flex-col items-center gap-5 group relative overflow-hidden"
+            >
+              {/* Ambient radial glow */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-brand-navy/30 via-brand-teal/15 to-transparent rounded-3xl blur-2xl -z-10 group-hover:opacity-100 transition-opacity" />
+
+              {/* Status Header */}
+              <div className="flex items-center justify-between w-full text-xs font-mono text-text-secondary border-b border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="text-emerald-400 font-semibold uppercase tracking-wider text-[10px]">Acoustic Sanctuary</span>
+                </div>
+                <span className="text-[11px] text-text-muted font-mono">Live Ready</span>
+              </div>
+
+              {/* Visual Core */}
+              <div className="relative py-2 flex items-center justify-center">
+                <AcousticCore
+                  state="IDLE"
+                  size="md"
+                  onClick={() => onNavigate('talk')}
+                />
+              </div>
+
+              {/* Action Button Inside Card */}
+              <div className="w-full py-3 px-4 rounded-xl bg-brand-teal/10 border border-brand-teal/30 group-hover:bg-brand-teal group-hover:text-white text-brand-teal-bright transition-all flex items-center justify-center gap-2 text-xs font-mono uppercase tracking-wider font-semibold shadow-lg shadow-brand-teal/10">
+                <span className="material-symbols-outlined text-[18px]">mic</span>
+                <span>Tap Core to Speak Now</span>
+              </div>
+
+              {/* Audio Tech Spec */}
+              <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
+                Groq Whisper LPU + ElevenLabs Neural Speech
+              </span>
             </div>
-            <span className="text-[11px] font-mono text-text-muted uppercase tracking-wider mt-2">
-              Tap core to enter live voice sanctuary
-            </span>
           </div>
         </div>
       </section>
