@@ -29,19 +29,19 @@ Use this quick-reference guide when filling out the official UNESCO submission f
 
 ## 2. Official Team Roster (6 Members)
 
-1. **Hamza Imran** — Team Leader, Chief Architect & Full-Stack AI Engineer | [LinkedIn](https://www.linkedin.com/in/hamza-imran-17569b383/) | `hamzaimran.buic@gmail.com`
-2. **Carla Yuliana Martinez Quiroz** — AI Systems & Media Production | [LinkedIn](https://www.linkedin.com/in/carla-yuliana-martinez-quiroz-24853b353/) | `carlamartinezquiroz@gmail.com`
-3. **Maryam Amjad** — Frontend Developer & UX Engineer | [LinkedIn](https://www.linkedin.com/in/maryam-amjad-3a235a315/) | `maryamamjad621@gmail.com`
+1. **Hamza Imran** — Team Leader, Chief Systems Architect & Full-Stack AI Engineer | [LinkedIn](https://www.linkedin.com/in/hamza-imran-17569b383/) | `hamza135252@gmail.com`
+2. **Carla Yuliana Martinez Quiroz** — AI Systems Documentation & Media Production | [LinkedIn](https://www.linkedin.com/in/carla-yuliana-martinez-quiroz-24853b353/) | `carlamartinezquiroz@gmail.com`
+3. **Maryam Amjad** — Frontend Developer | [LinkedIn](https://www.linkedin.com/in/maryam-amjad-3a235a315/) | `maryamamjad621@gmail.com`
 4. **Ilham Kurnia Gustavakuan** — Education Specialist | [LinkedIn](https://www.linkedin.com/in/ilham-kurnia-gustavakuan-2061281b9) | `amgustava@gmail.com`
-5. **Muhamad Rafi** — Technical Architect & Full-Stack Developer
-6. **Andini B. Soleman** — Community Engagement & Partnership Lead
+5. **Muhamad Rafi** — Team Accountant
+6. **Andini B. Soleman** — Team Accountant
 
 ---
 
 ## 3. Core Repository & Deployment Links
 
 * **Live Web Application (Vercel):**  
-  `https://frontend-nu-six-72.vercel.app`
+  `https://verivoice-ten.vercel.app` *(Edge Mirror: https://frontend-nu-six-72.vercel.app)*
 * **Backend API & Verification Server (Render):**  
   `https://verivoice-unesco-hackathon.onrender.com`
 * **Open-Source GitHub Repository:**  
@@ -55,5 +55,5 @@ Use this quick-reference guide when filling out the official UNESCO submission f
 
 * **Consistency with Theme (MIL & SDGs):** Built on DW Akademie’s 5 Pillars of MIL (*Access, Analyze, Reflect, Create, Act*) and directly contributes to UN SDGs 4 (Quality Education), 16 (Peace & Strong Institutions), and 17 (Partnerships for the Goals).
 * **Innovation & Novelty:** Socratic dialogue pedagogical learning model, breaking the text-literacy barrier through voice-first ASR/TTS across non-Latin scripts (Urdu Nastaliq), and deploying physical "Trust Nodes" with QR code Quick Start Kits.
-* **Technical Feasibility:** 100% production-ready prototype with 21 automated test suites and 170 tests passing (100% green).
+* **Technical Feasibility:** 100% production-ready prototype with 22 automated test suites and 180 tests passing (100% green).
 * **Impact & Inclusion:** Bridges the digital divide for 700M+ oral-first individuals and protects young people (ages 8–17) from AI confabulation and platform manipulation.

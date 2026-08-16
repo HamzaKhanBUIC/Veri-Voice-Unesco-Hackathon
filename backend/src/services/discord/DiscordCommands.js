@@ -96,6 +96,18 @@ class DiscordCommands {
         ],
       },
       {
+        name: 'live',
+        description: 'VeriVoice Live — Check official emergency alerts, flood warnings & weather',
+        options: [
+          {
+            name: 'query',
+            description: 'Location or disaster topic (e.g. Karachi flood, Sindh weather)',
+            type: 3,
+            required: false,
+          },
+        ],
+      },
+      {
         name: 'help',
         description: 'VeriVoice Onboarding — Learn how to verify claims & research questions',
       },
@@ -155,6 +167,34 @@ class DiscordCommands {
                       `${linksText}\n\n` +
                       `**Key Capabilities:**\n` +
                       `${diffText}`;
+      return { type: 'text', content: DiscordCommands.sanitizeOutputText(content) };
+    }
+
+    if (commandName === 'live') {
+      const LiveInformationService = require('../live/LiveInformationService');
+      const liveService = new LiveInformationService();
+      const userQuery = interaction.options?.getString ? interaction.options.getString('query') : (interaction.claimInput || '');
+      const liveData = await liveService.getLiveUpdates(userQuery || '', {
+        location: { country: 'Pakistan', region: userQuery || null },
+      });
+
+      let itemsList = '';
+      if (liveData.items && liveData.items.length > 0) {
+        itemsList = '\n\n' + liveData.items.slice(0, 3).map((it) => {
+          const badge = it.severity === 'CRITICAL' ? '🚨 CRITICAL' : it.severity === 'WARNING' ? '⚠️ WARNING' : 'ℹ️ ADVISORY';
+          const typeBadge = it.sourceType === 'OFFICIAL_ALERT' ? '🏛️ Official Alert' : it.sourceType === 'OFFICIAL_WEATHER' ? '🌦️ Weather Service' : '📰 News Report';
+          return `**[${badge}] ${it.title}**\n` +
+                 `*${typeBadge} • ${it.sourceOrganization}*\n` +
+                 `${it.summary}\n` +
+                 `🔗 [View Official Advisory](${it.url})`;
+        }).join('\n\n');
+      }
+
+      const content = `🔴 **VERIVOICE LIVE — OFFICIAL EMERGENCY & WEATHER AWARENESS**\n\n` +
+                      `**Summary**: ${liveData.summary}` +
+                      itemsList +
+                      `\n\n⚠️ *${liveData.disclaimer}*`;
+
       return { type: 'text', content: DiscordCommands.sanitizeOutputText(content) };
     }
 

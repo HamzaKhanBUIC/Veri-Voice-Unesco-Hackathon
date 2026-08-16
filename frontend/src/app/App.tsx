@@ -3,6 +3,7 @@ import { TopNavBar } from '../components/navigation/TopNavBar';
 import { LandingPage } from '../pages/LandingPage';
 import { TalkPage } from '../pages/TalkPage';
 import { ChatPage } from '../pages/ChatPage';
+import { LivePage } from '../pages/LivePage';
 import { MethodologyPage } from '../pages/MethodologyPage';
 import { PrivacyPage } from '../pages/PrivacyPage';
 import { PrivacyNoticeBanner } from '../components/privacy/PrivacyNoticeBanner';
@@ -186,6 +187,17 @@ export const App: React.FC = () => {
             currentLanguage={currentLanguage}
             onNavigate={setActiveView}
             isServerReady={isServerReady}
+          />
+        )}
+
+        {activeView === 'live' && (
+          <LivePage
+            currentLanguage={currentLanguage}
+            onNavigateToVerify={(claimText) => {
+              setSelectedClaim(claimText);
+              setActiveView('chat');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 

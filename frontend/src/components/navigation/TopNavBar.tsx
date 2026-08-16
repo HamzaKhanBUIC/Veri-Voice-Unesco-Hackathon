@@ -26,6 +26,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
     { label: t.nav.overview, view: 'landing', icon: 'home' },
     { label: t.nav.talk, view: 'talk', icon: 'graphic_eq' },
     { label: t.nav.chat, view: 'chat', icon: 'search' },
+    { label: 'Live Alerts', view: 'live', icon: 'sensors' },
     { label: t.nav.methodology, view: 'methodology', icon: 'shield' },
   ];
 

@@ -58,42 +58,48 @@ export interface ConversationContext {
 }
 
 export interface ConversationMeta {
-  sessionId: string;
-  turnCount: number;
-  intent: string;
-  evidenceReused: boolean;
+  sessionId?: string;
+  turnCount?: number;
+  activeClaim?: string | null;
+  activeEvidenceCount?: number;
+  inputLanguage?: string;
   responseLanguage?: string;
+  isExpired?: boolean;
+  intent?: string;
+  evidenceReused?: boolean;
 }
 
-export interface VerifyResponse {
+export interface VerificationResponse {
   success: boolean;
-  userClaim: string;
+  transcript?: string;
+  userClaim?: string;
   verdict: VerdictType;
-  confidence: number | string;
+  confidence: string | number;
   explanation: string;
-  evidence: EvidenceItem[];
-  retrievalMatchesCount?: number;
   audioUrl?: string | null;
-  conversation?: ConversationMeta;
+  evidence: EvidenceItem[];
+  languageMetadata?: {
+    detectedLanguage: string;
+    targetLanguage: string;
+    originalText: string;
+  };
+  domain?: string;
+  mode?: 'VERIFICATION' | 'GENERAL_RESEARCH' | 'LIVE';
   timing?: {
-    sttMs: number;
-    retrievalMs: number;
-    verificationMs: number;
-    ttsMs: number;
-    totalMs: number;
-    totalSeconds: string;
+    sttMs?: number;
+    verifMs?: number;
+    ttsMs?: number;
+    totalMs?: number;
   };
-  providers?: {
-    stt: string;
-    llm: string;
-    tts: string;
-  };
+  conversation?: ConversationMeta;
   error?: string;
 }
 
+export type VerifyResponse = VerificationResponse;
+
 export type VoiceState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'CHECKING' | 'RESPONDING' | 'ERROR';
 
-export type AppView = 'landing' | 'talk' | 'chat' | 'methodology' | 'privacy';
+export type AppView = 'landing' | 'talk' | 'chat' | 'live' | 'methodology' | 'privacy';
 
 export type DomainCategory =
   | 'ALL'
@@ -127,5 +133,57 @@ export interface ChatMessage {
   audioUrl?: string | null;
   isAudioInput?: boolean;
   isError?: boolean;
-  mode?: 'VERIFICATION' | 'GENERAL_RESEARCH';
+  mode?: 'VERIFICATION' | 'GENERAL_RESEARCH' | 'LIVE';
+}
+
+// Live Information & Emergency Awareness Types
+export type LiveCategory = 'LIVE_ALERTS' | 'WEATHER' | 'DISASTERS' | 'NEWS' | 'ALL';
+export type LiveSeverity = 'CRITICAL' | 'WARNING' | 'ADVISORY' | 'INFORMATIONAL' | 'UNKNOWN';
+export type LiveSourceType =
+  | 'OFFICIAL_ALERT'
+  | 'OFFICIAL_WEATHER'
+  | 'OFFICIAL_DISASTER'
+  | 'OFFICIAL_GOVERNMENT_UPDATE'
+  | 'NEWS_REPORT'
+  | 'RESEARCH_UPDATE'
+  | 'BACKGROUND'
+  | 'UNKNOWN';
+
+export interface LiveLocation {
+  country: string;
+  region?: string | null;
+  city?: string | null;
+  district?: string | null;
+}
+
+export interface LiveItem {
+  id: string;
+  title: string;
+  summary: string;
+  category: LiveCategory;
+  severity: LiveSeverity;
+  sourceOrganization: string;
+  sourceType: LiveSourceType;
+  url: string;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+  retrievedAt: string;
+  validUntil?: string | null;
+  location?: LiveLocation;
+  status: 'ACTIVE' | 'EXPIRED' | 'UPCOMING' | 'UNKNOWN_STATUS';
+  freshness: 'LIVE' | 'RECENT' | 'OUTDATED' | 'EXPIRED' | 'UNKNOWN_FRESHNESS';
+  authorityLevel?: string;
+  excerpt?: string;
+}
+
+export interface LiveResponse {
+  success: boolean;
+  query: string;
+  category: LiveCategory;
+  location: LiveLocation;
+  items: LiveItem[];
+  summary: string;
+  disclaimer: string;
+  retrievedAt: string;
+  sourceCount: number;
 }

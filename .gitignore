@@ -25,6 +25,12 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Build outputs & client-side dist
+dist/
+frontend/dist/
+backend/public/assets/
+docs/submission/~$*
+
 # Scratch & temporary logs
 scratch/
 logs/

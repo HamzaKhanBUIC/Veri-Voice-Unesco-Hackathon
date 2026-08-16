@@ -3,6 +3,8 @@ import { AcousticCore } from '../components/voice/AcousticCore';
 import { VerdictBadge } from '../components/ui/VerdictBadge';
 import { AudioWavePlayer } from '../components/voice/AudioWavePlayer';
 import { EvidenceRail } from '../components/evidence/EvidenceRail';
+import { ErrorRecoveryCard } from '../components/ui/ErrorRecoveryCard';
+import { FeedbackReportModal } from '../components/ui/FeedbackReportModal';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { apiClient } from '../services/api/ApiClient';
 import { getTranslation } from '../i18n/translations';
@@ -14,6 +16,13 @@ import {
   EvidenceItem,
   ConversationContext,
 } from '../types';
+import {
+  VeriVoiceErrorContext,
+  VeriVoiceAppError,
+  createDeviceError,
+  createPermissionError,
+  createNetworkTimeoutError,
+} from '../types/errors';
 
 interface TalkPageProps {
   onNavigate: (view: AppView) => void;
@@ -32,6 +41,10 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const [transcriptText, setTranscriptText] = useState<string>('');
   const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
   const [statusMessage, setStatusMessage] = useState(!isServerReady ? t.serverNotice.pleaseWait : t.talk.tapToSpeak);
+
+  // Resilience & Error Recovery State
+  const [currentError, setCurrentError] = useState<VeriVoiceErrorContext | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Persistent Multi-Turn Conversational Session Ref (Guarantees zero closure staleness)
   const sessionContextRef = useRef<ConversationContext>({
@@ -57,10 +70,32 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   useEffect(() => {
     setResponseLanguage(currentLanguage);
     sessionContextRef.current.targetLanguage = currentLanguage;
-    if (voiceState === 'IDLE') {
+    if (voiceState === 'IDLE' && !currentError) {
       setStatusMessage(!isServerReady ? t.serverNotice.pleaseWait : t.talk.tapToSpeak);
     }
-  }, [currentLanguage, isServerReady, voiceState, t]);
+  }, [currentLanguage, isServerReady, voiceState, currentError, t]);
+
+  // Page Visibility Recovery Watchdog (Mobile Backgrounding)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab backgrounded
+        if (activeAudioRef.current && !activeAudioRef.current.paused) {
+          activeAudioRef.current.pause();
+        }
+      } else {
+        // Tab foregrounded / resumed
+        if (voiceState === 'PROCESSING' || voiceState === 'CHECKING') {
+          setStatusMessage('Resumed. Finalizing verification...');
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [voiceState]);
 
   const {
     isRecording,
@@ -71,6 +106,27 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     error: recorderError,
     hasPermission,
   } = useVoiceRecorder(30);
+
+  // Handle recorder level error updates
+  useEffect(() => {
+    if (recorderError) {
+      if (hasPermission === false) {
+        setCurrentError(createPermissionError().context);
+      } else if (recorderError.includes('disconnected')) {
+        setCurrentError(createDeviceError().context);
+      } else {
+        setCurrentError({
+          category: 'AUDIO_FAILURE',
+          severity: 'WARNING',
+          userTitle: 'Voice Input Interrupted',
+          userMessage: recorderError,
+          retryable: true,
+          fallbackAction: 'TYPE_INSTEAD',
+          timestamp: Date.now(),
+        });
+      }
+    }
+  }, [recorderError, hasPermission]);
 
   // Stop any playing audio immediately (Barge-in / Interruption)
   const stopActiveAudioPlayback = useCallback(() => {
@@ -128,7 +184,6 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             const matching = voices.filter((v) => v.lang.toLowerCase().startsWith(code));
             const femaleRegex = /(female|woman|uzma|gul|zira|samantha|victoria|karen|swara|elvira|gadis|denise|katja|francisca|emel|zariyah|sabina|paulina|helena|eva|jenny|aria|sonia)/i;
             const femaleVoice = matching.find((v) => femaleRegex.test(v.name)) ||
-                                voices.find((v) => femaleRegex.test(v.name) && v.lang.toLowerCase().startsWith(code)) ||
                                 matching[0] ||
                                 voices.find((v) => femaleRegex.test(v.name));
             if (femaleVoice) {
@@ -190,8 +245,10 @@ export const TalkPage: React.FC<TalkPageProps> = ({
 
   // Handle Core Click (Start Recording, Stop Recording, or Barge-In)
   const handleCoreClick = async () => {
+    setCurrentError(null);
+
     if (sessionContextRef.current.turnCount! >= 10) {
-      setStatusMessage('Session limit reached. Refreshing conversation...');
+      setStatusMessage('Session limit reached. Starting fresh session...');
       handleResetSession();
       return;
     }
@@ -244,25 +301,38 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             });
 
             handleSuccessfulResponse(response);
-          } catch (apiErr: unknown) {
+          } catch (apiErr: any) {
             console.error('Talk verification failed:', apiErr);
             setVoiceState('ERROR');
-            setStatusMessage('Cloud verification service is reconnecting. Tap any inquiry below or retry speaking.');
+            if (apiErr instanceof VeriVoiceAppError) {
+              setCurrentError(apiErr.context);
+            } else {
+              setCurrentError(createNetworkTimeoutError().context);
+            }
           }
         };
         reader.readAsDataURL(blob);
       } catch (err: unknown) {
         setVoiceState('ERROR');
-        setStatusMessage('Audio processing error. Tap to retry.');
+        setCurrentError({
+          category: 'INTERNAL_FAILURE',
+          severity: 'ERROR',
+          userTitle: 'Processing Interrupted',
+          userMessage: 'Audio processing could not complete. Please tap retry or type your inquiry.',
+          retryable: true,
+          fallbackAction: 'TYPE_INSTEAD',
+          timestamp: Date.now(),
+        });
       }
     }
   };
 
   // Quick Action / Follow-up trigger via text chip
   const handleQuickFollowUp = async (promptText: string) => {
+    setCurrentError(null);
     stopActiveAudioPlayback();
     setVoiceState('CHECKING');
-    setStatusMessage(`Verifying follow-up: "${promptText}"...`);
+    setStatusMessage(`Verifying: "${promptText}"...`);
     setTranscriptText(promptText);
 
     try {
@@ -274,15 +344,20 @@ export const TalkPage: React.FC<TalkPageProps> = ({
       });
 
       handleSuccessfulResponse(response);
-    } catch (apiErr: unknown) {
+    } catch (apiErr: any) {
       console.error('Quick follow-up failed:', apiErr);
       setVoiceState('ERROR');
-      setStatusMessage('Verification service is reconnecting. Tap any inquiry below or retry.');
+      if (apiErr instanceof VeriVoiceAppError) {
+        setCurrentError(apiErr.context);
+      } else {
+        setCurrentError(createNetworkTimeoutError().context);
+      }
     }
   };
 
   // State update after successful backend verification
   const handleSuccessfulResponse = (response: VerifyResponse) => {
+    setCurrentError(null);
     setCurrentResult(response);
     setTranscriptText(response.userClaim || 'Spoken Query');
     setStatusMessage('Verification grounded.');
@@ -301,14 +376,15 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     setResponseLanguage(effectiveLang);
 
     // Append turn to history
+    const userText = response.userClaim || response.transcript || '';
     const updatedHistory: ConversationTurn[] = [
       ...(sessionContextRef.current.history || []),
-      { role: 'user' as const, text: response.userClaim },
+      { role: 'user' as const, text: userText },
       { role: 'assistant' as const, text: response.explanation, verdict: response.verdict },
     ].slice(-8);
 
     sessionContextRef.current.history = updatedHistory;
-    sessionContextRef.current.activeClaim = response.userClaim;
+    sessionContextRef.current.activeClaim = userText;
 
     if (response.evidence && response.evidence.length > 0) {
       sessionContextRef.current.activeEvidence = response.evidence;
@@ -324,6 +400,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     stopActiveAudioPlayback();
     setVoiceState('IDLE');
     setCurrentResult(null);
+    setCurrentError(null);
     setTranscriptText('');
     setTurnCount(0);
     setActiveEvidence([]);
@@ -391,11 +468,13 @@ export const TalkPage: React.FC<TalkPageProps> = ({
           />
         </div>
 
-        {/* Status Message */}
-        <div className="space-y-2">
-          <p className="font-editorial text-xl sm:text-2xl text-text-primary font-medium tracking-tight">
-            {statusMessage}
-          </p>
+        {/* Status Message & Active Error Recovery Card */}
+        <div className="space-y-3 w-full flex flex-col items-center">
+          {!currentError && (
+            <p className="font-editorial text-xl sm:text-2xl text-text-primary font-medium tracking-tight">
+              {statusMessage}
+            </p>
+          )}
 
           {isRecording && (
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-verdict-false/10 text-verdict-false text-xs font-mono">
@@ -404,23 +483,25 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             </div>
           )}
 
-          {recorderError && (
-            <p className="text-xs font-mono text-verdict-false">{recorderError}</p>
-          )}
-
-          {hasPermission === false && (
-            <div className="p-3.5 bg-surface-elevated/80 border border-border-subtle rounded-2xl max-w-md mx-auto space-y-2.5 text-center animate-fade-up">
-              <p className="text-xs text-text-secondary font-sans leading-relaxed">
-                Microphone access was denied or is unavailable in your browser. You can enable it in site permissions or type your query directly.
-              </p>
-              <button
-                onClick={() => onNavigate('chat')}
-                className="px-4 py-2 bg-brand-teal/15 hover:bg-brand-teal/25 text-brand-teal-bright rounded-xl text-xs font-mono inline-flex items-center gap-1.5 transition-all border border-brand-teal/30 hover:border-brand-teal/50"
-              >
-                <span>Type question in Chat instead</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </button>
-            </div>
+          {/* Standardized Error Recovery Card */}
+          {currentError && (
+            <ErrorRecoveryCard
+              error={currentError}
+              onRetry={() => {
+                setCurrentError(null);
+                handleCoreClick();
+              }}
+              onSecondaryAction={() => {
+                if (currentError.fallbackAction === 'TYPE_INSTEAD') {
+                  const inputEl = document.getElementById('talk-quick-input');
+                  inputEl?.focus();
+                } else if (currentError.fallbackAction === 'USE_SAMPLE') {
+                  handleQuickFollowUp('Are polio drops safe for children?');
+                }
+              }}
+              onReport={() => setIsReportModalOpen(true)}
+              onDismiss={() => setCurrentError(null)}
+            />
           )}
         </div>
 
@@ -470,7 +551,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
               </div>
             </div>
 
-            {/* Quick Text Input for Judges Without Working Mic */}
+            {/* Quick Text Input for Users or Fallback Typing */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -482,6 +563,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
               className="bg-[#14161C] border border-white/[0.08] focus-within:border-brand-teal-bright/60 rounded-2xl px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-tactile"
             >
               <input
+                id="talk-quick-input"
                 type="text"
                 value={customQuery}
                 onChange={(e) => setCustomQuery(e.target.value)}
@@ -503,7 +585,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
         {/* Spoken Transcript Note */}
         {transcriptText && (
           <div className="w-full text-left border-l-2 border-brand-teal-bright/40 pl-4 py-1 animate-fade-up">
-            <span className="text-[10px] font-mono uppercase text-text-muted block">Query:</span>
+            <span className="text-[10px] font-mono uppercase text-text-muted block">Inquiry:</span>
             <p className="font-sans text-sm sm:text-base text-text-primary italic">
               "{transcriptText}"
             </p>
@@ -516,9 +598,19 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             {/* Verdict Header Line */}
             <div className="flex items-center justify-between border-b border-border-subtle pb-4">
               <VerdictBadge verdict={currentResult.verdict} size="md" />
-              <span className="text-xs font-mono text-text-muted">
-                Confidence: <strong className="text-brand-teal-bright">{currentResult.confidence}</strong>
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-text-muted">
+                  Confidence: <strong className="text-brand-teal-bright">{currentResult.confidence}</strong>
+                </span>
+                <button
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="text-text-muted hover:text-brand-teal-bright transition-colors text-xs font-mono flex items-center gap-1"
+                  title="Report or suggest evidence"
+                >
+                  <span className="material-symbols-outlined text-[14px]">flag</span>
+                  <span>Report</span>
+                </button>
+              </div>
             </div>
 
             {/* Large Editorial Truth Statement */}
@@ -557,12 +649,6 @@ export const TalkPage: React.FC<TalkPageProps> = ({
                 className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile font-urdu"
               >
                 "ناسا نے کیا کہا؟"
-              </button>
-              <button
-                onClick={() => handleQuickFollowUp('En Español')}
-                className="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-text-secondary hover:text-text-primary rounded-lg border border-white/[0.08] transition-tactile"
-              >
-                "En Español"
               </button>
             </div>
 
@@ -621,6 +707,15 @@ export const TalkPage: React.FC<TalkPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* Feedback & Dispute Report Modal */}
+      <FeedbackReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        claimText={currentResult?.userClaim || transcriptText}
+        verdict={currentResult?.verdict}
+        requestId={currentResult?.conversation?.sessionId}
+      />
     </div>
   );
 };

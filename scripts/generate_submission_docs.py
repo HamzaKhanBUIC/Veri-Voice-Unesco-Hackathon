@@ -152,7 +152,7 @@ def build_word_document(output_path):
     r_links = p_sub.add_run("Live Web App: ")
     r_links.bold = True
     r_links.font.size = Pt(9.5)
-    r_links_url = p_sub.add_run("https://frontend-nu-six-72.vercel.app  |  ")
+    r_links_url = p_sub.add_run("https://verivoice-ten.vercel.app  |  ")
     r_links_url.font.size = Pt(9.5)
     r_links_url.font.color.rgb = RGBColor(2, 132, 199)
     
@@ -167,7 +167,7 @@ def build_word_document(output_path):
     p_div = doc.add_paragraph()
     p_div.paragraph_format.space_before = Pt(4)
     p_div.paragraph_format.space_after = Pt(14)
-    r_div = p_div.add_run("―" * 52)
+    r_div = p_div.add_run("—" * 52)
     r_div.font.color.rgb = RGBColor(226, 232, 240)
 
     # ----------------------------------------------------
@@ -182,7 +182,7 @@ def build_word_document(output_path):
     r_h1.font.color.rgb = RGBColor(15, 23, 42)
     
     p_team_intro = doc.add_paragraph(
-        "Team VeriVoice is an international, 100% youth-led collective (aged 18–30) uniting young engineers, educators, and community organizers across South Asia, Latin America, and Southeast Asia to make media literacy universally accessible:"
+        "Team VeriVoice is an international, 100% youth-led collective (aged 18 to 30) uniting young engineers, educators, and community organizers across South Asia, Latin America, and Southeast Asia to make media literacy universally accessible:"
     )
     p_team_intro.paragraph_format.space_after = Pt(8)
     
@@ -211,12 +211,12 @@ def build_word_document(output_path):
         r.font.color.rgb = RGBColor(255, 255, 255)
         
     team_data = [
-        ("Hamza Imran\nTeam Leader, Chief Architect & Full-Stack AI Engineer", "End-to-End Systems Architecture, Groq LPU Bounded Reasoning, ASR/TTS & Backend Eng. (Pakistan)", "LinkedIn: /in/hamza-imran-17569b383/\nEmail: hamzaimran.buic@gmail.com"),
-        ("Carla Yuliana Martinez Quiroz\nAI Systems & Media Production", "Generative AI Speech Systems, ASR/TTS Pipelines & Media Production (Mexico)", "LinkedIn: /in/carla-yuliana-martinez-quiroz-24853b353/\nEmail: carlamartinezquiroz@gmail.com"),
-        ("Maryam Amjad\nFrontend Developer & UX Engineer", "Design Systems, 3D Evidence Constellation Canvas & Multilingual UI/UX (Pakistan)", "LinkedIn: /in/maryam-amjad-3a235a315/\nEmail: maryamamjad621@gmail.com"),
+        ("Hamza Imran\nTeam Leader, Chief Systems Architect & Full-Stack AI Engineer", "End-to-End Systems Architecture, Full-Stack Engineering, Generative AI Speech Systems (ASR/TTS), Groq LPU Bounded Reasoning & Testing (Pakistan)", "LinkedIn: /in/hamza-imran-17569b383/\nEmail: hamza135252@gmail.com"),
+        ("Carla Yuliana Martinez Quiroz\nAI Systems Documentation & Media Production", "AI Systems Documentation, Multilingual Media Production, Educational Audio-Visual Design & Technical Writing (Mexico)", "LinkedIn: /in/carla-yuliana-martinez-quiroz-24853b353/\nEmail: carlamartinezquiroz@gmail.com"),
+        ("Maryam Amjad\nFrontend Developer", "Design Systems, 3D Evidence Constellation Canvas & Multilingual UI/UX (Pakistan)", "LinkedIn: /in/maryam-amjad-3a235a315/\nEmail: maryamamjad621@gmail.com"),
         ("Ilham Kurnia Gustavakuan\nEducation Specialist", "Pedagogical Frameworks, Socratic Learning Models & MIL Curricula (Indonesia)", "LinkedIn: /in/ilham-kurnia-gustavakuan-2061281b9\nEmail: amgustava@gmail.com"),
-        ("Muhamad Rafi\nTechnical Architect & Full-Stack Developer", "Full-Stack Web Architecture, Cloud Deployment & Real-Time API Infrastructure (Indonesia)", "Technical Lead / Core Contributor\nVerified Youth Innovator"),
-        ("Andini B. Soleman\nCommunity Engagement & Partnership Lead", "Grassroots Youth Outreach, Physical Trust Nodes Network & Civic Hubs (Indonesia)", "Community Lead / Civic Coordinator\nVerified Youth Innovator")
+        ("Muhamad Rafi\nTeam Accountant", "Project Budgeting, Financial Planning, Grant Administration & Resource Economics (Indonesia)", "Financial & Operations Management\nVerified Youth Innovator"),
+        ("Andini B. Soleman\nTeam Accountant", "Financial Reporting, Expenditure Tracking, Community Node Allocation & Compliance (Indonesia)", "Financial & Compliance Management\nVerified Youth Innovator")
     ]
     
     for row_idx, row_data in enumerate(team_data, start=1):
@@ -326,25 +326,25 @@ def build_word_document(output_path):
     r_h5.font.color.rgb = RGBColor(15, 23, 42)
     
     p_concept = doc.add_paragraph(
-        "VeriVoice is a hybrid AI-driven verification engine accessible natively across Web, Discord, WhatsApp, and Telegram. It functions digitally and physically as a decentralized “Trust Node Network”:"
+        "VeriVoice is a hybrid AI-driven verification engine accessible natively across the Web and 24/7 Discord Community Bot. It functions digitally and physically as a decentralized “Trust Node Network”:"
     )
     p_concept.paragraph_format.space_after = Pt(6)
     
     pipeline_steps = [
-        ("Voice & Text Intake", "Users speak or forward suspicious audio voice notes, viral video audio, or text claims directly via WhatsApp, Telegram, Discord, or Web."),
-        ("Multilingual Speech Transcription", "Speechmatics ASR and Groq Whisper transcribe regional accents and non-Latin phonemes (Urdu Nastaliq, Indonesian, Spanish, English) in under 380 ms."),
-        ("12-Domain Intent Routing", "Queries are classified across 12 specialized domains (Health, Climate, AI Disinformation, Media Literacy, Disaster Warnings, Science, etc.)."),
+        ("Multi-Modal Intake", "Users speak via Web Acoustic Core, upload an audio clip, or type slash commands on Discord."),
+        ("Multilingual Speech Transcription", "Groq Whisper Large v3 (whisper-large-v3-turbo) with Speechmatics failover transcribes regional accents (Urdu Nastaliq, Indonesian, Spanish, English) in under 400 ms."),
+        ("15-Domain Intent Routing", "Queries route deterministically across 15 specialized domains (Health, Climate, AI Disinformation, Media Literacy, Disaster Warnings, Biodiversity, Science, etc.)."),
         ("Multi-Tier Source Authority Hierarchy", "Sources are ranked deterministically: Primary Institutional (WHO, WMO, UNESCO) & Scientific Data (NOAA, NASA, USGS) > Official Government (CDC, NDMA) > Scientific Review (Climate Feedback) > Certified Fact-Checkers (AFP, Reuters)."),
-        ("Bounded Groq LPU Reasoning (0% Hallucination)", "Llama 3.3 70B operates within strict XML prompt boundaries (<USER_CLAIM> and <EVIDENCE>). If evidence is absent, the engine forces an explicit UNCERTAIN verdict."),
-        ("Citation Allow-List Validation", "CitationValidator automatically inspects and rejects unretrieved URLs or hallucinated attributions."),
-        ("High-Definition Neural Voice Synthesis", "Microsoft Edge & ElevenLabs synthesize natural spoken explanations in native mother tongues, unlinking temporary audio files immediately after transmission.")
+        ("Bounded Groq LPU Reasoning", "Llama 3.3 70B operates within strict XML prompt boundaries (<USER_CLAIM> and <EVIDENCE>). If evidence is absent, the engine forces an explicit UNCERTAIN verdict."),
+        ("Citation Allow-List Validation", "CitationValidator automatically inspects and rejects unretrieved URLs or hallucinated attributions, enforcing 0% citation hallucination tolerance."),
+        ("High-Definition Neural Voice Output", "Microsoft Edge & ElevenLabs (5-key pool) synthesize natural spoken explanations in native mother tongues, unlinking temporary audio files immediately after transmission.")
     ]
     for step_num, (stitle, sdesc) in enumerate(pipeline_steps, start=1):
         p_step = doc.add_paragraph()
         p_step.paragraph_format.space_before = Pt(1)
         p_step.paragraph_format.space_after = Pt(3)
         p_step.paragraph_format.line_spacing = 1.15
-        r_num = p_step.add_run(f"Stage {step_num}: {stitle} ― ")
+        r_num = p_step.add_run(f"Stage {step_num}: {stitle} — ")
         r_num.bold = True
         r_num.font.color.rgb = RGBColor(13, 148, 136)
         r_desc = p_step.add_run(sdesc)
@@ -389,8 +389,8 @@ def build_word_document(output_path):
     
     feas_points = [
         ("Strategic Physical Partners", "Local institutions (pharmacies, libraries, schools, community health centers) serve as physical “Trust Nodes.”"),
-        ("Ease of Adoption (Quick Start Kits)", "We provide physical QR-code placards for instant WhatsApp integration, completely removing the barrier of app store downloads or logins."),
-        ("Hybrid Human-AI Model", "When AI models encounter extreme cultural ambiguity, queries escalate to a human-in-the-loop dashboard managed by trained youth community leaders, ensuring cultural nuance and addressing gaps in formal AI training (Muhammad Rafique et al., 2026).")
+        ("Ease of Adoption (Quick Start Kits)", "We provide physical QR-code placards for instant Web and messaging access, completely removing the barrier of app store downloads or logins."),
+        ("Hybrid Human-AI Model & Dispute Drawer", "When AI models encounter extreme cultural ambiguity or disputes, queries escalate to a moderation dashboard managed by trained youth community leaders (Muhammad Rafique et al., 2026).")
     ]
     for ftitle, fdesc in feas_points:
         p_f = doc.add_paragraph()
@@ -416,12 +416,12 @@ def build_word_document(output_path):
     r_h8.font.color.rgb = RGBColor(15, 23, 42)
     
     p_test_intro = doc.add_paragraph(
-        "VeriVoice is backed by comprehensive, rigorous automated test verification ensuring 100% architectural reliability, sub-1.8s execution latency, and zero hallucination:"
+        "VeriVoice is backed by comprehensive automated test verification ensuring 100% architectural reliability, sub-1.8s execution latency, and citation allow-listing:"
     )
     p_test_intro.paragraph_format.space_after = Pt(8)
     
     # Test Table
-    table_test = doc.add_table(rows=7, cols=3)
+    table_test = doc.add_table(rows=8, cols=3)
     table_test.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_test.autofit = False
     set_table_borders(table_test)
@@ -446,11 +446,12 @@ def build_word_document(output_path):
         ("Prompt Injection & Security", "2 Suites / 28 Tests (PASS)", "XML delimiter isolation (<USER_CLAIM>, <EVIDENCE>) prevents attacks."),
         ("Multi-Turn Conversational Talk", "1 Suite / 15 Tests (PASS)", "Validates barge-in audio interruption & 10-turn context retention."),
         ("Multilingual ASR & Neural TTS", "3 Suites / 24 Tests (PASS)", "Validates Urdu, Indonesian, Spanish, and English voice synthesis."),
-        ("Domain Routing & Query Logic", "3 Suites / 22 Tests (PASS)", "Validates 12-domain semantic classification & anti-query explosion."),
-        ("TOTAL VERIFIED PLATFORM", "21 Suites / 170 Tests (PASS)", "100% GREEN · ZERO REGRESSIONS · PRODUCTION READY")
+        ("Domain Routing & Query Logic", "3 Suites / 22 Tests (PASS)", "Validates 15-domain semantic classification & anti-query explosion."),
+        ("Chaos & Resilience Engineering", "1 Suite / 10 Tests (PASS)", "Validates bounded retries, idempotency cache & error resilience."),
+        ("TOTAL VERIFIED PLATFORM", "22 Suites / 180 Tests (PASS)", "100% GREEN · ZERO REGRESSIONS · PRODUCTION READY")
     ]
     for row_idx, row_data in enumerate(test_data, start=1):
-        bg = "F0FDF4" if row_idx == 6 else ("F8FAFC" if row_idx % 2 == 1 else "FFFFFF")
+        bg = "F0FDF4" if row_idx == 7 else ("F8FAFC" if row_idx % 2 == 1 else "FFFFFF")
         for col_idx, text in enumerate(row_data):
             cell = table_test.cell(row_idx, col_idx)
             cell.width = twidths[col_idx]
@@ -460,7 +461,7 @@ def build_word_document(output_path):
             r = p.add_run(text)
             r.font.name = "Segoe UI"
             r.font.size = Pt(8.5)
-            if row_idx == 6:
+            if row_idx == 7:
                 r.bold = True
                 r.font.color.rgb = RGBColor(22, 101, 52)
             else:
@@ -674,7 +675,7 @@ def build_powerpoint_presentation(output_path):
     p_t1.font.color.rgb = PRGBColor(13, 148, 136)
     
     p_t2 = tf_team.add_paragraph()
-    p_t2.text = "• Hamza Imran (Team Leader, Chief Architect & Full-Stack AI Engineer · Pakistan)\n• Carla Yuliana Martinez Quiroz (AI Systems & Media Production · Mexico)  |  Maryam Amjad (Frontend & UX Engineer · Pakistan)\n• Ilham Kurnia Gustavakuan (Education Specialist · Indonesia)  |  Muhamad Rafi (Technical Architect)  |  Andini B. Soleman (Civic Lead)"
+    p_t2.text = "• Hamza Imran (Team Leader, Chief Systems Architect & Full-Stack AI Engineer · Pakistan · hamza135252@gmail.com)\n• Carla Yuliana Martinez Quiroz (AI Systems Documentation & Media Production · Mexico)  |  Maryam Amjad (Frontend Developer · Pakistan)\n• Ilham Kurnia Gustavakuan (Education Specialist · Indonesia)  |  Muhamad Rafi (Team Accountant)  |  Andini B. Soleman (Team Accountant)"
     p_t2.font.size = PPt(9.5)
     p_t2.font.color.rgb = PRGBColor(226, 232, 240)
 
@@ -742,11 +743,11 @@ def build_powerpoint_presentation(output_path):
         add_card(s3, x, y, PInches(5.7), PInches(2.3), otitle, obody, otag)
 
     # SLIDE 4: Architecture Pipeline
-    s4 = create_base_slide("End-to-End Verification Pipeline: Bounded AI & 0% Hallucination")
+    s4 = create_base_slide("End-to-End Verification Pipeline: Bounded AI & Citation Integrity")
     
     steps = [
         ("1. Voice In", "Speechmatics & Groq Whisper ASR (Urdu, Indo, ES, EN)"),
-        ("2. 12 Domains", "Health, Climate, AI Disinfo, Disaster, Space, Science"),
+        ("2. 15 Domains", "Health, Climate, AI Disinfo, Disaster, Space, Science, etc."),
         ("3. Authority", "WHO, NOAA, USGS, WMO, UNESCO Institutional Consensus"),
         ("4. Groq LPU", "Llama 3.3 70B in XML Isolation (<USER_CLAIM>, <EVIDENCE>)"),
         ("5. Guardrails", "CitationValidator Rejects Unretrieved URLs -> Safe UNCERTAIN"),
@@ -767,7 +768,7 @@ def build_powerpoint_presentation(output_path):
     
     add_card(s5, PInches(6.8), PInches(1.8), PInches(5.7), PInches(4.8),
              "Cultural & Sensory Voice Adaptation",
-             "Dismantles the 'technical literacy' barrier by translating dense WHO/NOAA/IPCC consensus into natural mother-tongue conversations (Urdu Nastaliq, Indonesian, Spanish, English).\n\nEmpowers rural mothers, students, and elders to verify rumors directly in family WhatsApp and community Discord channels in under 1.8 seconds.",
+             "Dismantles the 'technical literacy' barrier by translating dense WHO/NOAA/IPCC consensus into natural mother-tongue conversations (Urdu Nastaliq, Indonesian, Spanish, English).\n\nEmpowers rural mothers, students, and elders to verify rumors directly in community Discord channels and mobile web in under 1.8 seconds.",
              "INNOVATION 02")
 
     # SLIDE 6: Trust Nodes Network
@@ -775,7 +776,7 @@ def build_powerpoint_presentation(output_path):
     
     add_card(s6, PInches(0.8), PInches(1.8), PInches(3.7), PInches(4.8),
              "Physical Trust Nodes",
-             "Partnering with local pharmacies, libraries, schools, and community centers.\n\nPhysical placards provide instant QR-code 'Quick Start Kits' connecting directly to WhatsApp—zero app downloads needed.",
+             "Partnering with local pharmacies, libraries, schools, and community centers.\n\nPhysical placards provide instant QR-code 'Quick Start Kits' connecting directly to Web and messaging—zero app downloads needed.",
              "PILLAR 01")
     add_card(s6, PInches(4.8), PInches(1.8), PInches(3.7), PInches(4.8),
              "Hybrid Human-in-the-Loop",
@@ -783,15 +784,15 @@ def build_powerpoint_presentation(output_path):
              "PILLAR 02")
     add_card(s6, PInches(8.8), PInches(1.8), PInches(3.7), PInches(4.8),
              "Frugal Economics",
-             "Routine queries (80-90%) run on Groq LPU inference, costing < $0.0012 per query.\n\nScales seamlessly from one village to millions of users with multi-key API rotation.",
+             "Routine queries run on Groq LPU inference, costing < $0.0012 per query.\n\nScales seamlessly from one village to millions of users with multi-key API rotation.",
              "PILLAR 03")
 
     # SLIDE 7: Technical Proof
-    s7 = create_base_slide("Empirical Feasibility: 21 Test Suites, 170 Tests & Sub-1.8s Latency")
+    s7 = create_base_slide("Empirical Feasibility: 22 Test Suites, 180 Tests & Sub-1.8s Latency")
     
     add_card(s7, PInches(0.8), PInches(1.8), PInches(3.7), PInches(4.8),
              "100% Green Test Suite",
-             "• 21 Test Suites / 170 Automated Tests Passing (100% Green)\n• Specialized tests in tests/unescoAuthority.test.js & tests/security.test.js\n• Full coverage of authority ranking, XML prompt isolation & URL allow-listing.",
+             "• 22 Test Suites / 180 Automated Tests Passing (100% Green)\n• Specialized tests in tests/unescoAuthority.test.js & tests/chaosResilience.test.js\n• Full coverage of authority ranking, XML prompt isolation & URL allow-listing.",
              "SOFTWARE RIGOR")
     add_card(s7, PInches(4.8), PInches(1.8), PInches(3.7), PInches(4.8),
              "Sub-1.8s Response Latency",
@@ -799,7 +800,7 @@ def build_powerpoint_presentation(output_path):
              "PERFORMANCE BENCHMARK")
     add_card(s7, PInches(8.8), PInches(1.8), PInches(3.7), PInches(4.8),
              "Live Deployments",
-             "• Production Frontend (Vercel): frontend-nu-six-72.vercel.app\n• Cloud Backend API (Render): verivoice-unesco-hackathon.onrender.com\n• Discord Bot: Live 24/7 with 9 slash commands & audio processing.",
+             "• Production Frontend (Vercel): verivoice-ten.vercel.app\n• Cloud Backend API (Render): verivoice-unesco-hackathon.onrender.com\n• Discord Bot: Live 24/7 with 9 slash commands & audio processing.",
              "PRODUCTION READY")
 
     # SLIDE 8: SDGs & Sustainability

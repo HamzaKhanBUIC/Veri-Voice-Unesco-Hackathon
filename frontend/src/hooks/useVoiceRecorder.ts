@@ -32,6 +32,11 @@ export const useVoiceRecorder = (maxDurationSeconds: number = 30): UseVoiceRecor
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // Hardware State Lock to prevent race conditions & rapid double-taps
+  const isStartingRef = useRef<boolean>(false);
+  const lastStartTimeRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
+
   const cleanupAudioAnalysis = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -73,6 +78,16 @@ export const useVoiceRecorder = (maxDurationSeconds: number = 30): UseVoiceRecor
       mediaRecorder.onstop = async () => {
         const mimeType = mediaRecorder.mimeType || 'audio/webm;codecs=opus';
         const finalBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const duration = (Date.now() - startTimeRef.current) / 1000;
+
+        // Minimum audio length guard (prevent accidental 0.2s taps)
+        if (duration < 0.6 || finalBlob.size < 400) {
+          setError('Audio recording was too brief. Please hold or speak clearly for up to 30 seconds.');
+          setIsRecording(false);
+          resolve(null);
+          return;
+        }
+
         const url = URL.createObjectURL(finalBlob);
 
         // Convert to Base64
@@ -86,6 +101,7 @@ export const useVoiceRecorder = (maxDurationSeconds: number = 30): UseVoiceRecor
         setAudioBlob(finalBlob);
         setAudioUrl(url);
         setIsRecording(false);
+        setError(null);
 
         // Release mic tracks
         if (streamRef.current) {
@@ -96,13 +112,32 @@ export const useVoiceRecorder = (maxDurationSeconds: number = 30): UseVoiceRecor
         resolve(finalBlob);
       };
 
-      mediaRecorder.stop();
+      try {
+        mediaRecorder.stop();
+      } catch (err) {
+        console.warn('[useVoiceRecorder] Error stopping mediaRecorder:', err);
+        setIsRecording(false);
+        resolve(null);
+      }
     });
   }, [cleanupAudioAnalysis, audioBlob]);
 
   const startRecording = useCallback(async (): Promise<boolean> => {
+    const now = Date.now();
+    // 300ms Hardware Debounce Lock: Ignore rapid double-clicks
+    if (isStartingRef.current || now - lastStartTimeRef.current < 350) {
+      return false;
+    }
+
+    isStartingRef.current = true;
+    lastStartTimeRef.current = now;
     resetRecording();
+
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not supported in this browser.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -114,12 +149,27 @@ export const useVoiceRecorder = (maxDurationSeconds: number = 30): UseVoiceRecor
       streamRef.current = stream;
       setHasPermission(true);
 
-      // Supported MIME types
+      // Hardware Device Disconnection Listener (e.g. AirPods disconnect)
+      stream.getAudioTracks().forEach((track) => {
+        track.onended = () => {
+          console.warn('[useVoiceRecorder] Audio track ended unexpectedly (device disconnected)');
+          setError('Your audio input device was disconnected. Please tap retry.');
+          stopRecording();
+        };
+      });
+
+      // MIME Fallback Matrix: WebM -> MP4 (iOS) -> OGG -> Default
       let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus'
-          : '';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+          } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+            mimeType = 'audio/ogg;codecs=opus';
+          } else {
+            mimeType = '';
+          }
+        }
       }
 
       const mediaRecorder = mimeType
@@ -136,48 +186,56 @@ export const useVoiceRecorder = (maxDurationSeconds: number = 30): UseVoiceRecor
       };
 
       // Set up real-time volume level analysis
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      const audioCtx = new AudioCtx();
-      audioContextRef.current = audioCtx;
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64;
-      source.connect(analyser);
-      analyserRef.current = analyser;
+      try {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const audioCtx = new AudioCtx();
+          audioContextRef.current = audioCtx;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+          source.connect(analyser);
+          analyserRef.current = analyser;
 
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const checkVolume = () => {
-        if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          const checkVolume = () => {
+            if (!analyserRef.current) return;
+            analyserRef.current.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+            }
+            const avg = sum / dataArray.length;
+            setVolumeLevel(Math.min(1.0, avg / 128));
+            animationFrameRef.current = requestAnimationFrame(checkVolume);
+          };
+          checkVolume();
         }
-        const avg = sum / dataArray.length;
-        setVolumeLevel(Math.min(1.0, avg / 128));
-        animationFrameRef.current = requestAnimationFrame(checkVolume);
-      };
-      checkVolume();
+      } catch (audioCtxErr) {
+        console.warn('[useVoiceRecorder] AudioContext volume meter not supported:', audioCtxErr);
+      }
 
       mediaRecorder.start(100);
+      startTimeRef.current = Date.now();
       setIsRecording(true);
       setError(null);
 
       // Timer
-      const startTime = Date.now();
       timerRef.current = window.setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         setRecordingDuration(elapsed);
         if (elapsed >= maxDurationSeconds) {
           stopRecording();
         }
       }, 1000);
 
+      isStartingRef.current = false;
       return true;
     } catch (err: unknown) {
-      console.warn('Microphone permission or access error:', err);
+      console.warn('[useVoiceRecorder] Microphone permission or access error:', err);
+      isStartingRef.current = false;
       setHasPermission(false);
-      setError('Microphone access denied. Please allow microphone permissions.');
+      setError('Microphone access blocked. Please enable microphone permissions or type your question.');
       setIsRecording(false);
       return false;
     }

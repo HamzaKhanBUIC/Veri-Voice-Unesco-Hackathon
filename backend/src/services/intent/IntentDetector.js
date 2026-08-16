@@ -1,13 +1,15 @@
 /**
  * Intent Detector Service.
- * Categorizes user intent into VERIFY_CLAIM, GENERAL_RESEARCH, CASUAL_CONVERSATION,
- * FOLLOW_UP, LANGUAGE_SWITCH, GUIDANCE, or STOP.
+ * Categorizes user intent into VERIFY_CLAIM, GENERAL_RESEARCH, LIVE_INFORMATION,
+ * CASUAL_CONVERSATION, FOLLOW_UP, LANGUAGE_SWITCH, GUIDANCE, or STOP.
  */
 
 const INTENTS = {
   VERIFY_CLAIM: 'VERIFY_CLAIM',
   GENERAL_RESEARCH: 'GENERAL_RESEARCH',
   GENERAL_QUESTION: 'GENERAL_RESEARCH', // Backwards compatible alias
+  LIVE_INFORMATION: 'LIVE_INFORMATION',
+  LIVE_ALERT: 'LIVE_INFORMATION',
   CASUAL_CONVERSATION: 'CASUAL_CONVERSATION',
   FOLLOW_UP: 'FOLLOW_UP',
   LANGUAGE_SWITCH: 'LANGUAGE_SWITCH',
@@ -22,7 +24,7 @@ class IntentDetector {
   /**
    * Detects intent from text, optional requested mode, and conversation context.
    * @param {string} text 
-   * @param {string} [requestedMode] - 'VERIFICATION' | 'GENERAL_RESEARCH'
+   * @param {string} [requestedMode] - 'VERIFICATION' | 'GENERAL_RESEARCH' | 'LIVE'
    * @param {object} [context] - Optional conversation context { activeClaim, hasEvidence, turnCount }
    * @returns {{ intent: string, mode: string, confidence: string, targetLanguage?: string }}
    */
@@ -32,6 +34,9 @@ class IntentDetector {
     }
     if (requestedMode === 'GENERAL_RESEARCH') {
       return { intent: INTENTS.GENERAL_RESEARCH, mode: 'GENERAL_RESEARCH', confidence: 'HIGH' };
+    }
+    if (requestedMode === 'LIVE' || requestedMode === 'LIVE_INFORMATION') {
+      return { intent: INTENTS.LIVE_INFORMATION, mode: 'LIVE', confidence: 'HIGH' };
     }
 
     if (!text || typeof text !== 'string') {
@@ -65,7 +70,23 @@ class IntentDetector {
       return { intent: INTENTS.CASUAL_CONVERSATION, mode: 'GENERAL_RESEARCH', confidence: 'HIGH' };
     }
 
-    // 4. Follow-up intent (If previous activeClaim or activeEvidence exists, or short referential query)
+    // 4. Live Alerts & Emergency Awareness Intent ("What is happening now?", "flood warning", "current weather")
+    const livePatterns = [
+      /\b(what is happening (now|today|right now)|what's happening (now|today|right now)|live updates?|breaking news)\b/i.test(trimmed),
+      /\b(flood warning|flood alert|flash flood|heavy rain alert|monsoon alert|ndma alert|pmd alert|cyclone alert|earthquake alert|glof alert|landslide alert)\b/i.test(trimmed),
+      /\b(is there (a|any) (flood|weather|cyclone|disaster|emergency|severe weather) (warning|alert|advisory))\b/i.test(trimmed),
+      /\b(current weather|weather (today|now|forecast)|temperature (today|now)|is it raining (today|now|in))\b/i.test(trimmed),
+      /\b(disaster advisories|official alerts?|emergency updates?|active warnings?|evacuation orders?)\b/i.test(trimmed),
+      /(سیلاب کا الرٹ|بارش کا الرٹ|موسم کا حال|تازہ ترین صورتحال|ہنگامی الرٹ|این ڈی ایم اے الرٹ|پی ایم ڈی الرٹ)/i.test(trimmed),
+      /(peringatan banjir|info cuaca terkini|gempa bumi sekarang|peringatan bmkg|berita terkini|situasi darurat)/i.test(trimmed),
+      /(alerta de inundación|clima actual|alerta meteorológica|noticias de última hora|terremoto ahora)/i.test(trimmed),
+    ];
+
+    if (livePatterns.some(Boolean)) {
+      return { intent: INTENTS.LIVE_INFORMATION, mode: 'LIVE', confidence: 'HIGH' };
+    }
+
+    // 5. Follow-up intent (If previous activeClaim or activeEvidence exists, or short referential query)
     const hasContext = context && (context.activeClaim || (context.activeEvidence && context.activeEvidence.length > 0) || (context.history && context.history.length > 0));
     const isShortReferential = /^(why\??|why is that\??|kyun\??|کیوں\??|por qué\??|mengapa\??|explain more|tell me more|what about the (first|second|third|who|cdc|nasa) source\??|what did (who|cdc|nasa|the scientists?) say\??|is it contagious\??|how come\??|how so\??)$/i.test(trimmed);
 
@@ -73,12 +94,12 @@ class IntentDetector {
       return { intent: INTENTS.FOLLOW_UP, mode: 'GENERAL_RESEARCH', confidence: 'HIGH' };
     }
 
-    // 5. Guidance / Help patterns
+    // 6. Guidance / Help patterns
     if (/\b(how to use|help|commands|what can you do|gui me|madad|ayuda|bantuan)\b/i.test(trimmed)) {
       return { intent: INTENTS.GUIDANCE, mode: 'GENERAL_RESEARCH', confidence: 'HIGH' };
     }
 
-    // 6. Explicit Verification Claim patterns
+    // 7. Explicit Verification Claim patterns
     const verificationPatterns = [
       /\b(is it true that|is it fact that|verify this|check this claim|fact check|rumor|myth|hoax|fake news)\b/i.test(trimmed),
       /\b(is|are|can|does|do|will|should|true|false|fake|real|myth|hoax|safe|prevent|cause|cure)\b.*\?/i.test(trimmed),
@@ -92,7 +113,7 @@ class IntentDetector {
       return { intent: INTENTS.VERIFY_CLAIM, mode: 'VERIFICATION', confidence: 'HIGH' };
     }
 
-    // 7. General Research patterns (Who, What, Where, When, Why, How)
+    // 8. General Research patterns (Who, What, Where, When, Why, How)
     const researchPatterns = [
       /\b(who|what|where|when|why|how|explain|describe|list|tell me about|history of|discovery of)\b/i.test(trimmed),
       /(کون|کیا|کہاں|کب|کیوں|کیسے|وضاحت کریں|تفصیل)/i.test(trimmed),
@@ -101,12 +122,12 @@ class IntentDetector {
     ];
 
     if (researchPatterns.some(Boolean)) {
-      return { intent: INTENTS.GENERAL_RESEARCH, mode: 'GENERAL_RESEARCH', confidence: 'HIGH' };
+      return { intent: INTENTS.GENERAL_RESEARCH, mode: 'GENERAL_RESEARCH', confidence: 'MEDIUM' };
     }
 
-    // 8. Default to VERIFICATION for declarative statements > 15 chars
-    if (trimmed.length > 15 && !trimmed.endsWith('?')) {
-      return { intent: INTENTS.VERIFY_CLAIM, mode: 'VERIFICATION', confidence: 'MEDIUM' };
+    // Default to VERIFY_CLAIM if statement appears to assert a fact
+    if (trimmed.length > 20 && !trimmed.endsWith('?')) {
+      return { intent: INTENTS.VERIFY_CLAIM, mode: 'VERIFICATION', confidence: 'LOW' };
     }
 
     return { intent: INTENTS.GENERAL_RESEARCH, mode: 'GENERAL_RESEARCH', confidence: 'LOW' };
@@ -114,30 +135,19 @@ class IntentDetector {
 
   /**
    * Helper to detect language switch requests.
-   * @param {string} text
-   * @returns {string|null} Detected language code or null
+   * @param {string} text 
+   * @returns {string|null}
    */
   static detectLanguageSwitch(text) {
-    if (/(ab urdu mein|urdu mein|in urdu|اردو میں|explain in urdu|translate to urdu|urdu please)/i.test(text)) {
-      return 'ur';
-    }
-    if (/(in spanish|en español|habla en español|translate to spanish|spanish please)/i.test(text)) {
-      return 'es';
-    }
-    if (/(in indonesian|bahasa indonesia|dalam bahasa indonesia|indonesian please)/i.test(text)) {
-      return 'id';
-    }
-    if (/(in english|now in english|english please|switch to english|angrezi mein)/i.test(text)) {
-      return 'en';
-    }
-    if (/(in arabic|بالعربية|arabic please)/i.test(text)) {
-      return 'ar';
-    }
+    if (/\b(speak (in )?urdu|urdu me(in)? (batao|bolo|samjhao|samjhaiye)|urdu language|اردو میں بولو|اردو)\b/i.test(text)) return 'ur';
+    if (/\b(speak (in )?english|english me(in)? (bolo|samjhao)|english please|in english)\b/i.test(text)) return 'en';
+    if (/\b(speak (in )?spanish|habla en español|en español|spanish language)\b/i.test(text)) return 'es';
+    if (/\b(speak (in )?indonesian|bahasa indonesia|bicara bahasa indonesia)\b/i.test(text)) return 'id';
     return null;
   }
 }
 
 module.exports = {
-  INTENTS,
   IntentDetector,
+  INTENTS,
 };

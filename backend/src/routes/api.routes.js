@@ -14,6 +14,8 @@ const MockVerificationProvider = require('../services/verification/MockVerificat
 const { conversationManager } = require('../services/conversation/ConversationManager');
 const { validateConversationContext } = require('../schemas/conversationSchema');
 const { verifyProtectionMiddleware, ttsProtectionMiddleware } = require('../middleware/rateLimitMiddleware');
+const LiveInformationService = require('../services/live/LiveInformationService');
+const liveInformationService = new LiveInformationService();
 
 const tmpDir = path.join(__dirname, '../../tmp');
 if (!fs.existsSync(tmpDir)) {
@@ -368,6 +370,62 @@ router.get('/api/tts', ttsProtectionMiddleware, async (req, res) => {
   } catch (err) {
     console.error('TTS Endpoint Error:', err.message);
     res.status(500).json({ error: 'TTS audio synthesis temporarily unavailable.' });
+  }
+});
+
+/**
+ * GET /api/live
+ * POST /api/live
+ * Retrieves live emergency advisories, official meteorological alerts, and disaster updates.
+ * Protected by verifyProtectionMiddleware (rate limits & concurrency).
+ */
+router.get('/api/live', verifyProtectionMiddleware, async (req, res) => {
+  try {
+    const query = req.query.q || req.query.query || '';
+    const category = req.query.category || 'ALL';
+    const country = req.query.country || 'Pakistan';
+    const region = req.query.region || null;
+    const city = req.query.city || null;
+
+    const result = await liveInformationService.getLiveUpdates(query, {
+      category,
+      location: { country, region, city },
+      forceRefresh: req.query.refresh === 'true',
+    });
+
+    return res.json(result);
+  } catch (err) {
+    console.error('Live Information Endpoint Error:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Live information service temporarily unavailable.',
+      disclaimer: 'For immediate safety decisions, follow the latest instructions from local emergency authorities.',
+      items: [],
+    });
+  }
+});
+
+router.post('/api/live', verifyProtectionMiddleware, async (req, res) => {
+  try {
+    const query = req.body.query || req.body.q || '';
+    const category = req.body.category || 'ALL';
+    const location = req.body.location || { country: 'Pakistan' };
+
+    const result = await liveInformationService.getLiveUpdates(query, {
+      category,
+      location,
+      forceRefresh: req.body.forceRefresh === true,
+    });
+
+    return res.json(result);
+  } catch (err) {
+    console.error('Live Information Endpoint Error:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Live information service temporarily unavailable.',
+      disclaimer: 'For immediate safety decisions, follow the latest instructions from local emergency authorities.',
+      items: [],
+    });
   }
 });
 

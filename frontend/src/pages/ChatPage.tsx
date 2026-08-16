@@ -2,10 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import { VerdictBadge } from '../components/ui/VerdictBadge';
 import { AudioWavePlayer } from '../components/voice/AudioWavePlayer';
 import { EvidenceRail } from '../components/evidence/EvidenceRail';
+import { ErrorRecoveryCard } from '../components/ui/ErrorRecoveryCard';
+import { FeedbackReportModal } from '../components/ui/FeedbackReportModal';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { apiClient } from '../services/api/ApiClient';
 import { getTranslation } from '../i18n/translations';
 import { ChatMessage, DomainCategory, AppView } from '../types';
+import {
+  VeriVoiceErrorContext,
+  VeriVoiceAppError,
+  createDeviceError,
+  createPermissionError,
+  createNetworkTimeoutError,
+} from '../types/errors';
 
 interface ChatPageProps {
   initialClaim?: string;
@@ -29,6 +38,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const [activeEvidence, setActiveEvidence] = useState<ChatMessage | null>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  // Resilience & Dispute State
+  const [activeError, setActiveError] = useState<VeriVoiceErrorContext | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportTargetMsg, setReportTargetMsg] = useState<ChatMessage | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const {
@@ -37,7 +51,29 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     startRecording,
     stopRecording,
     error: recorderError,
+    hasPermission,
   } = useVoiceRecorder(30);
+
+  // Synchronize microphone errors into ErrorRecoveryCard
+  useEffect(() => {
+    if (recorderError) {
+      if (hasPermission === false) {
+        setActiveError(createPermissionError().context);
+      } else if (recorderError.includes('disconnected')) {
+        setActiveError(createDeviceError().context);
+      } else {
+        setActiveError({
+          category: 'AUDIO_FAILURE',
+          severity: 'WARNING',
+          userTitle: 'Voice Input Issue',
+          userMessage: recorderError,
+          retryable: true,
+          fallbackAction: 'TYPE_INSTEAD',
+          timestamp: Date.now(),
+        });
+      }
+    }
+  }, [recorderError, hasPermission]);
 
   const domainPills: { id: DomainCategory; label: string; icon: string }[] = [
     { id: 'ALL', label: t.chat.domainAll, icon: 'apps' },
@@ -55,7 +91,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     'What causes dengue fever and how is it treated?',
   ];
 
-  // Dynamic warm-up status timer when query takes > 3s
+  // Dynamic warm-up status timer when query takes > 3.5s
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     if (isLoading) {
@@ -65,11 +101,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       }, 3500);
     }
     return () => clearTimeout(timer);
-  }, [isLoading, currentLanguage]);
+  }, [isLoading, currentLanguage, t]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, activeError]);
 
   useEffect(() => {
     if (initialClaim && initialClaim.trim().length > 0) {
@@ -80,6 +116,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const handleSubmitText = async (queryText?: string) => {
     const textToSubmit = queryText || inputText;
     if (!textToSubmit || textToSubmit.trim().length === 0 || isLoading) return;
+
+    setActiveError(null);
 
     const userMsg: ChatMessage = {
       id: `msg_${Date.now()}`,
@@ -116,25 +154,19 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
       setMessages((prev) => [...prev, assistantMsg]);
       setActiveEvidence(assistantMsg);
-    } catch (err: unknown) {
-      const errorMsg: ChatMessage = {
-        id: `err_${Date.now()}`,
-        role: 'assistant',
-        text: err instanceof Error ? err.message : 'Unable to complete verification.',
-        timestamp: Date.now(),
-        isError: true,
-        verdict: 'UNCERTAIN',
-        confidence: 0,
-        explanation: 'Verification service encountered an error. Please retry your inquiry.',
-        evidence: [],
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+    } catch (err: any) {
+      if (err instanceof VeriVoiceAppError) {
+        setActiveError(err.context);
+      } else {
+        setActiveError(createNetworkTimeoutError().context);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleMicToggle = async () => {
+    setActiveError(null);
     if (isRecording) {
       const blob = await stopRecording();
       if (!blob) return;
@@ -147,7 +179,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
           const userVoiceMsg: ChatMessage = {
             id: `msg_voice_${Date.now()}`,
             role: 'user',
-            text: '🎙️ Spoken Voice Note...',
+            text: 'Spoken Voice Note',
             timestamp: Date.now(),
             isAudioInput: true,
           };
@@ -177,19 +209,12 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
           setMessages((prev) => [...prev, assistantMsg]);
           setActiveEvidence(assistantMsg);
-        } catch (err: unknown) {
-          const errorMsg: ChatMessage = {
-            id: `err_${Date.now()}`,
-            role: 'assistant',
-            text: err instanceof Error ? err.message : 'Voice verification failed.',
-            timestamp: Date.now(),
-            isError: true,
-            verdict: 'UNCERTAIN',
-            confidence: 0,
-            explanation: 'Failed to transcribe or verify voice message. Please retry.',
-            evidence: [],
-          };
-          setMessages((prev) => [...prev, errorMsg]);
+        } catch (err: any) {
+          if (err instanceof VeriVoiceAppError) {
+            setActiveError(err.context);
+          } else {
+            setActiveError(createNetworkTimeoutError().context);
+          }
         } finally {
           setIsLoading(false);
         }
@@ -306,11 +331,24 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                             </span>
                           )}
                         </div>
-                        {msg.confidence !== undefined && (
-                          <span className="text-xs font-mono text-text-muted">
-                            Confidence: <strong className="text-brand-teal-bright">{msg.confidence}</strong>
-                          </span>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {msg.confidence !== undefined && (
+                            <span className="text-xs font-mono text-text-muted">
+                              Confidence: <strong className="text-brand-teal-bright">{msg.confidence}</strong>
+                            </span>
+                          )}
+                          <button
+                            onClick={() => {
+                              setReportTargetMsg(msg);
+                              setIsReportModalOpen(true);
+                            }}
+                            className="text-text-muted hover:text-brand-teal-bright transition-colors text-xs font-mono flex items-center gap-1"
+                            title="Report or dispute verdict"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">flag</span>
+                            <span>Report</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Editorial Explanation */}
@@ -351,6 +389,26 @@ export const ChatPage: React.FC<ChatPageProps> = ({
             ))
           )}
 
+          {/* Active Error Recovery Card */}
+          {activeError && (
+            <div className="flex justify-start w-full">
+              <ErrorRecoveryCard
+                error={activeError}
+                onRetry={() => {
+                  setActiveError(null);
+                  handleSubmitText();
+                }}
+                onSecondaryAction={() => {
+                  if (activeError.fallbackAction === 'USE_SAMPLE') {
+                    handleSubmitText('Polio drops are safe and essential for children');
+                  }
+                }}
+                onReport={() => setIsReportModalOpen(true)}
+                onDismiss={() => setActiveError(null)}
+              />
+            </div>
+          )}
+
           {/* Loading Indicator */}
           {isLoading && (
             <div className="flex justify-start">
@@ -371,10 +429,6 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
         {/* Sleek Writing Instrument Composer */}
         <div className="p-4 md:p-6 bg-gradient-to-t from-[#0E0E0E] via-[#0E0E0E] to-transparent border-t border-white/[0.06] flex flex-col gap-2 max-w-4xl mx-auto w-full flex-shrink-0">
-          {recorderError && (
-            <span className="text-xs font-mono text-verdict-false px-2">{recorderError}</span>
-          )}
-
           {isRecording && (
             <div className="text-xs font-mono text-verdict-false flex items-center gap-2 px-2">
               <span className="w-2 h-2 rounded-full bg-verdict-false animate-ping" />
@@ -457,6 +511,18 @@ export const ChatPage: React.FC<ChatPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* Feedback & Dispute Report Modal */}
+      <FeedbackReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => {
+          setIsReportModalOpen(false);
+          setReportTargetMsg(null);
+        }}
+        claimText={reportTargetMsg?.text}
+        verdict={reportTargetMsg?.verdict}
+        requestId={reportTargetMsg?.id}
+      />
     </div>
   );
 };
