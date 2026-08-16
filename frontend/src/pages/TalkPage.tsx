@@ -48,6 +48,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
   const [turnCount, setTurnCount] = useState<number>(0);
   const [responseLanguage, setResponseLanguage] = useState<string>(currentLanguage || 'en');
   const [activeEvidence, setActiveEvidence] = useState<EvidenceItem[]>([]);
+  const [customQuery, setCustomQuery] = useState<string>('');
 
   // Ref to stop active audio on barge-in / speech start
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -422,6 +423,77 @@ export const TalkPage: React.FC<TalkPageProps> = ({
             </div>
           )}
         </div>
+
+        {/* Instant One-Tap Inquiries & Quick Query Bar */}
+        {!currentResult && !isRecording && (
+          <div className="w-full max-w-lg space-y-4 animate-fade-up">
+            <div className="space-y-2.5">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-text-muted">
+                One-Tap Inquiry Demos:
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={() => handleQuickFollowUp('Is the Earth flat or spherical?')}
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                >
+                  "Is Earth flat?" 🌍
+                </button>
+                <button
+                  onClick={() => handleQuickFollowUp('کیا پولیو کے قطرے بچوں کے لیے محفوظ ہیں؟')}
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-urdu text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                >
+                  "کیا پولیو کے قطرے محفوظ ہیں؟"
+                </button>
+                <button
+                  onClick={() => handleQuickFollowUp('Do vaccines cause autism?')}
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                >
+                  "Do vaccines cause autism?" 💉
+                </button>
+                <button
+                  onClick={() => handleQuickFollowUp('¿Las vacunas causan autismo?')}
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                >
+                  "¿Las vacunas causan autismo?" 🇪🇸
+                </button>
+                <button
+                  onClick={() => handleQuickFollowUp('Apakah bawang putih menyembuhkan corona?')}
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                >
+                  "Bawang putih & Covid?" 🇮🇩
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Text Input for Judges Without Working Mic */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (customQuery.trim()) {
+                  handleQuickFollowUp(customQuery.trim());
+                  setCustomQuery('');
+                }
+              }}
+              className="bg-[#14161C] border border-white/[0.08] focus-within:border-brand-teal-bright/60 rounded-2xl px-3 py-1.5 flex items-center gap-2 shadow-2xl transition-tactile"
+            >
+              <input
+                type="text"
+                value={customQuery}
+                onChange={(e) => setCustomQuery(e.target.value)}
+                placeholder="Or type inquiry to hear spoken verdict..."
+                className="flex-1 bg-transparent border-none text-xs sm:text-sm text-text-primary px-2 py-1.5 focus:outline-none placeholder:text-text-muted"
+              />
+              <button
+                type="submit"
+                disabled={!customQuery.trim()}
+                className="px-3 py-1.5 bg-brand-teal-bright text-surface-base disabled:opacity-30 disabled:cursor-not-allowed font-medium rounded-xl text-xs font-mono transition-all flex items-center gap-1"
+              >
+                <span>Verify</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Spoken Transcript Note */}
         {transcriptText && (

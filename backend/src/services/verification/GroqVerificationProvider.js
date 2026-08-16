@@ -4,6 +4,16 @@ const FALLBACK_GROQ_KEYS = [
   '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',
   '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',
   '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',
+  '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',
+  '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',
+];
+
+const FALLBACK_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-70b-versatile',
+  'llama-3.1-8b-instant',
+  'qwen-2.5-32b',
+  'mixtral-8x7b-32768',
 ];
 
 /**
@@ -193,6 +203,16 @@ ${formattedEvidence}
             console.warn(`⚠️ Groq key #${keyIndex + 1} quota/rate limited (HTTP ${response.status}). Rotating...`);
             lastError = new Error(`Groq HTTP ${response.status}: ${errText}`);
             continue;
+          }
+          if (response.status === 404 || response.status === 400 && (errText.includes('model') || errText.includes('decommission'))) {
+            console.warn(`⚠️ Groq model '${payload.model}' unavailable (${errText}). Trying fallback model...`);
+            for (const altModel of FALLBACK_MODELS) {
+              if (altModel !== payload.model) {
+                payload.model = altModel;
+                this.model = altModel;
+                break;
+              }
+            }
           }
           throw new Error(`Groq API returned HTTP ${response.status}: ${errText}`);
         }
