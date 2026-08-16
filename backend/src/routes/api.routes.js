@@ -100,9 +100,18 @@ router.post('/api/verify', verifyProtectionMiddleware, async (req, res) => {
     let transcriptText = userClaimText;
 
     if (req.body.audioBase64) {
+      const rawExt = (req.body.fileExt || 'webm').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const ext = ALLOWED_AUDIO_EXTENSIONS.has(rawExt) ? rawExt : 'webm';
+      
       const audioBuffer = Buffer.from(req.body.audioBase64, 'base64');
-      const ext = req.body.fileExt || 'webm';
-      inputAudioPath = path.join(tmpDir, `input_${Date.now()}.${ext}`);
+      if (audioBuffer.length > MAX_AUDIO_BUFFER_BYTES) {
+        return res.status(413).json({
+          success: false,
+          error: `Audio file size exceeds maximum limit of 10MB (${(audioBuffer.length / (1024 * 1024)).toFixed(1)}MB provided).`,
+        });
+      }
+
+      inputAudioPath = path.join(tmpDir, `input_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`);
       fs.writeFileSync(inputAudioPath, audioBuffer);
 
       const sttStart = Date.now();
@@ -224,7 +233,7 @@ router.post('/api/verify', verifyProtectionMiddleware, async (req, res) => {
 
     // 4. Text-To-Speech Synthesis (Gracefully handled)
     const ttsStart = Date.now();
-    const outputAudioFilename = `output_${Date.now()}.mp3`;
+    const outputAudioFilename = `output_${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
     const outputAudioPath = path.join(tmpDir, outputAudioFilename);
     let audioUrl = null;
 
@@ -288,7 +297,7 @@ router.post('/api/verify', verifyProtectionMiddleware, async (req, res) => {
     console.error('API Verification Error:', err.message);
     return res.status(500).json({
       success: false,
-      error: err.message,
+      error: 'An internal error occurred during verification. Please retry.',
     });
   } finally {
     // Cleanup temporary input file
@@ -305,13 +314,24 @@ router.post('/api/verify', verifyProtectionMiddleware, async (req, res) => {
 /**
  * GET /api/tts
  * Generates and streams Neural MP3 Audio on-demand for any text and language.
+ * Protected by ttsProtectionMiddleware (rate limits & concurrency).
  */
-router.get('/api/tts', async (req, res) => {
+router.get('/api/tts', ttsProtectionMiddleware, async (req, res) => {
   const text = req.query.text;
-  const lang = req.query.lang || 'ur';
+  const rawLang = req.query.lang || 'ur';
+  const lang = typeof rawLang === 'string' ? rawLang.replace(/[^a-zA-Z-]/g, '').slice(0, 10) : 'ur';
 
   if (!text || typeof text !== 'string' || text.trim() === '') {
     return res.status(400).json({ error: 'Text query parameter is required.' });
+  }
+
+  // Prevent resource exhaustion through unbounded text synthesis
+  const MAX_TTS_TEXT_LENGTH = 300;
+  const cleanText = text.trim();
+  if (cleanText.length > MAX_TTS_TEXT_LENGTH) {
+    return res.status(400).json({
+      error: `TTS text exceeds maximum allowed length of ${MAX_TTS_TEXT_LENGTH} characters.`,
+    });
   }
 
   const outputFilename = `stream_${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
@@ -326,13 +346,14 @@ router.get('/api/tts', async (req, res) => {
       ttsProvider = new EdgeTTSProvider();
     }
 
-    await ttsProvider.synthesize(text, outputPath, { language: lang });
+    await ttsProvider.synthesize(cleanText, outputPath, { language: lang });
 
     if (fs.existsSync(outputPath)) {
       res.set({
         'Content-Type': 'audio/mpeg',
         'Cache-Control': 'public, max-age=86400',
         'Accept-Ranges': 'bytes',
+        'X-Content-Type-Options': 'nosniff',
       });
       const stream = fs.createReadStream(outputPath);
       stream.pipe(res);
@@ -346,7 +367,7 @@ router.get('/api/tts', async (req, res) => {
     }
   } catch (err) {
     console.error('TTS Endpoint Error:', err.message);
-    res.status(500).json({ error: `TTS synthesis failed: ${err.message}` });
+    res.status(500).json({ error: 'TTS audio synthesis temporarily unavailable.' });
   }
 });
 

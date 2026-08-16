@@ -17,7 +17,7 @@ function validateAudioFile(filePath) {
   const resolvedPath = path.resolve(filePath);
 
   if (!fs.existsSync(resolvedPath)) {
-    return { valid: false, error: `Audio file does not exist: ${filePath}` };
+    return { valid: false, error: `File does not exist (Audio file not found): ${filePath}` };
   }
 
   let stats;
@@ -32,7 +32,7 @@ function validateAudioFile(filePath) {
   }
 
   if (stats.size === 0) {
-    return { valid: false, error: `Audio file is empty (0 bytes): ${filePath}` };
+    return { valid: false, error: `Empty audio file — Audio file is empty (0 bytes): ${filePath}` };
   }
 
   const ext = path.extname(resolvedPath).toLowerCase();

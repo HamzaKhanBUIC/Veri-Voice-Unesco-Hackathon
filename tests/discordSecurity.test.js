@@ -105,10 +105,11 @@ describe('Discord Security, Privacy & Abuse Prevention Battery (20 Vectors)', ()
   // 8. Output Text Sanitization in Help & About Cards
   it('SEC-08: should deliver clean help and about cards with privacy disclosures', async () => {
     const helpRes = await DiscordCommands.handleInteraction({ commandName: 'help' }, {});
-    expect(helpRes.content).toContain('🔒 **Privacy**');
+    expect(helpRes.content).toContain('Privacy Policy');
 
     const aboutRes = await DiscordCommands.handleInteraction({ commandName: 'about' }, {});
-    expect(aboutRes.content).toContain('🔒 **Data Policy**');
+    expect(aboutRes.content).toContain('Privacy');
+    expect(aboutRes.content).toContain('GitHub');
   });
 
   // 9. Malicious Citation URL Schemes (javascript:)

@@ -93,7 +93,7 @@ export interface VerifyResponse {
 
 export type VoiceState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'CHECKING' | 'RESPONDING' | 'ERROR';
 
-export type AppView = 'landing' | 'talk' | 'chat' | 'methodology';
+export type AppView = 'landing' | 'talk' | 'chat' | 'methodology' | 'privacy';
 
 export type DomainCategory =
   | 'ALL'

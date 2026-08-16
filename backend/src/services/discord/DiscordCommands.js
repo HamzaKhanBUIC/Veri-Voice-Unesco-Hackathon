@@ -135,23 +135,26 @@ class DiscordCommands {
       const card = GuidanceService.getOnboardingCard();
       const content = `ℹ️ **${card.title}**\n\n` +
                       `${card.description}\n\n` +
-                      `**Primary Modes:**\n` +
+                      `**Primary Verification Commands:**\n` +
                       card.modes.map((m) => `• \`${m.command}\`: ${m.description}`).join('\n') + `\n\n` +
                       `**Domain Shortcuts:**\n` +
-                      card.shortcuts.map((s) => `• \`${s.command} <text>\`: ${s.label}`).join('\n') + `\n\n` +
-                      `*${card.voiceNotice}*\n\n` +
-                      `🔒 **Privacy**: Voice notes & messages are processed temporarily for transcription and verification. Audio is immediately erased upon completion.`;
+                      card.shortcuts.map((s) => `• \`${s.command}\`: ${s.label}`).join('\n') + `\n\n` +
+                      `**Voice Verification:**\n` +
+                      `${card.voiceNotice}\n\n` +
+                      `🔒 **Privacy Policy**:\n` +
+                      `${card.privacyNotice}`;
       return { type: 'text', content: DiscordCommands.sanitizeOutputText(content) };
     }
 
     if (commandName === 'about') {
       const card = GuidanceService.getAboutCard();
-      const content = `🌐 **${card.title}**\n\n` +
-                      `${card.description}\n\n` +
-                      `**Key Differentiators:**\n` +
-                      card.differentiators.map((d) => `• ${d}`).join('\n') + `\n\n` +
-                      `*${card.datasetNotice}*\n\n` +
-                      `🔒 **Data Policy**: Zero persistent tracking. Verification pipelines operate in memory with strict citation allowlists.`;
+      const linksText = card.links.map((l) => `• **${l.label}**: [${l.label}](${l.url})`).join('\n');
+      const diffText = card.differentiators.map((d) => `• ${d}`).join('\n');
+      const content = `🛡️ **${card.title}**\n` +
+                      `${card.subtitle}\n\n` +
+                      `${linksText}\n\n` +
+                      `**Key Capabilities:**\n` +
+                      `${diffText}`;
       return { type: 'text', content: DiscordCommands.sanitizeOutputText(content) };
     }
 

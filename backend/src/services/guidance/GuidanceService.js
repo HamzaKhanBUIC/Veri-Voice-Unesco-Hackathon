@@ -1,49 +1,61 @@
 /**
  * Guidance Service.
- * Provides interactive product guidance explaining VeriVoice's 2 primary modes (Verification & General Research) and domain shortcuts.
+ * Provides interactive product guidance, command usage, methodology links, and privacy disclosures.
  */
+
+const GITHUB_REPO_URL = 'https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon';
+const PRIVACY_URL = 'https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon/blob/main/docs/discord-privacy.md';
+const METHODOLOGY_URL = 'https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon/blob/main/docs/architecture.md';
+const WEBSITE_URL = 'https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon#readme';
 
 class GuidanceService {
   static getOnboardingCard() {
     return {
-      title: '👋 Welcome to VeriVoice',
-      description: 'VeriVoice is an evidence-first, voice-first assistant designed to verify rumors, research questions, and explore authoritative sources.',
+      title: 'VeriVoice Commands & Usage Guide',
+      description: 'VeriVoice is an evidence-first, voice-first verification assistant designed to counter rumors, research factual questions, and ground answers in credible international institutions.',
       modes: [
         {
           command: '/verify <claim>',
           badge: '🔎 VERIFICATION MODE',
-          description: 'Checks whether a claim is TRUE, FALSE, MIXED, or UNCERTAIN using retrieved evidence & citations.',
+          description: 'Checks whether a claim is 🟢 TRUE, 🔴 FALSE, 🟡 MIXED, or ⚪ UNCERTAIN using retrieved evidence & citations.',
         },
         {
           command: '/general <question>',
           badge: '🌐 GENERAL RESEARCH MODE',
-          description: 'Answers research questions using web evidence without forcing artificial TRUE/FALSE verdicts.',
+          description: 'Researches open factual inquiries using live web evidence without forcing artificial TRUE/FALSE verdicts.',
         },
       ],
       shortcuts: [
-        { command: '/health', label: '🏥 Health & Medicine' },
-        { command: '/science', label: '🔬 Science & Astronomy' },
-        { command: '/climate', label: '🌦️ Climate & Weather' },
-        { command: '/disaster', label: '🚨 Disasters & Emergencies' },
-        { command: '/education', label: '🎓 Education & Policy' },
+        { command: '/health <text>', label: '🏥 Health & Medicine (WHO, CDC, PAHO, NIH)' },
+        { command: '/science <text>', label: '🔬 Science & Astronomy (NASA, ESA, CERN, USGS)' },
+        { command: '/climate <text>', label: '🌦️ Climate & Weather (WMO, IPCC, NOAA, PMD, BMKG)' },
+        { command: '/disaster <text>', label: '🚨 Disasters & Warnings (NDMA, BNPB, UN OCHA, ReliefWeb)' },
+        { command: '/education <text>', label: '🎓 Education & Policy (UNESCO, GADRRRES)' },
       ],
-      voiceNotice: '🎙️ Send a voice message anytime: VeriVoice transcribes, analyzes, and returns a spoken audio response in your language!',
+      voiceNotice: '🎙️ **Voice Messages**: Hold your mic and send a voice note anytime in this channel or DM! VeriVoice transcribes the audio, validates the claims, and replies with a spoken neural voice response in your language.',
+      privacyNotice: `🎙️ Your audio is processed to transcribe your request and generate a response. See our [Privacy Policy](${PRIVACY_URL}) for details.`,
+      privacyUrl: PRIVACY_URL,
     };
   }
 
   static getAboutCard() {
     return {
-      title: '🛡️ About VeriVoice',
-      description: 'VeriVoice is an evidence-grounded research and verification platform created for UNESCO infodemic mitigation.',
-      differentiators: [
-        '1. Verification-First Workflow: Separates evidence verification from general research.',
-        '2. Domain-Aware Retrieval: Prioritizes WHO/PAHO for Health, NASA/USGS for Space, WMO/NOAA for Climate.',
-        '3. Traceable Citations: Rejects URL hallucinations and links directly to retrieved sources.',
-        '4. Honest Uncertainty: Explicitly states when evidence is insufficient or conflicting.',
-        '5. Multilingual Voice Interaction: Transcribes and speaks responses in 10+ languages.',
-        '6. Transparent Verification: Shows "How VeriVoice Checked This" without exposing internal reasoning.',
+      title: 'VeriVoice',
+      subtitle: 'A voice-first evidence verification assistant.',
+      links: [
+        { label: 'Learn how it works', url: WEBSITE_URL },
+        { label: 'Privacy', url: PRIVACY_URL },
+        { label: 'Source methodology', url: METHODOLOGY_URL },
+        { label: 'GitHub', url: GITHUB_REPO_URL },
       ],
-      datasetNotice: 'Production knowledge base governance preserves strict evidence integrity. Unsupported claims return explicit uncertainty rather than model memory guesses.',
+      differentiators: [
+        'Evidence-Grounded Verification: Prioritizes peer-reviewed and primary institutional sources (WHO, NASA, IPCC, CDC, USGS).',
+        'Multilingual Voice Interaction: Native recognition and neural voice synthesis in 9 languages (Urdu, English, Spanish, Indonesian, Arabic, Hindi, French, German).',
+        'Honest Uncertainty Principle: Explicitly outputs UNCERTAIN when evidence is absent, conflicting, or unverified.',
+        'Zero-Retention Privacy: Voice notes are processed ephemerally and immediately purged after synthesis.',
+      ],
+      privacyUrl: PRIVACY_URL,
+      githubUrl: GITHUB_REPO_URL,
     };
   }
 }

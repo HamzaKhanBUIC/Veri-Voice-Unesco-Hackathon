@@ -408,12 +408,18 @@ export const TalkPage: React.FC<TalkPageProps> = ({
           )}
 
           {hasPermission === false && (
-            <button
-              onClick={() => onNavigate('chat')}
-              className="text-xs text-brand-teal-bright underline font-mono block mx-auto"
-            >
-              Use text verification instead
-            </button>
+            <div className="p-3.5 bg-surface-elevated/80 border border-border-subtle rounded-2xl max-w-md mx-auto space-y-2.5 text-center animate-fade-up">
+              <p className="text-xs text-text-secondary font-sans leading-relaxed">
+                Microphone access was denied or is unavailable in your browser. You can enable it in site permissions or type your query directly.
+              </p>
+              <button
+                onClick={() => onNavigate('chat')}
+                className="px-4 py-2 bg-brand-teal/15 hover:bg-brand-teal/25 text-brand-teal-bright rounded-xl text-xs font-mono inline-flex items-center gap-1.5 transition-all border border-brand-teal/30 hover:border-brand-teal/50"
+              >
+                <span>Type question in Chat instead</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </button>
+            </div>
           )}
         </div>
 

@@ -55,7 +55,7 @@ class CitationValidator {
       if (citeUrl) {
         if (cleanUrl.startsWith('javascript:') || cleanUrl.startsWith('data:') || cleanUrl.startsWith('file:') || cleanUrl.startsWith('vbscript:')) {
           console.warn(`⚠️ CitationValidator: Rejecting dangerous URI scheme: '${citeUrl}'`);
-          return { valid: false, reason: `Dangerous URI scheme detected: '${citeUrl}'` };
+          return { valid: false, reason: `Malformed citation URL: Dangerous URI scheme detected '${citeUrl}'` };
         }
 
         if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {

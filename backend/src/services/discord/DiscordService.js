@@ -312,7 +312,7 @@ class DiscordService {
         sourceCitations = '\n\n**Sources:**\n' + pipelineResult.sources.slice(0, 2).map((s) => `• [${s.organization || s.sourceTitle || 'Official Source'}](${s.url || 'https://who.int'})`).join('\n');
       }
 
-      const privacyFooter = '\n\n🔒 *Privacy: Voice notes are processed temporarily and immediately purged after verification.*';
+      const privacyFooter = '\n\n🎙️ *Your audio is processed to transcribe your request and generate a response. See our [Privacy Policy](https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon/blob/main/docs/discord-privacy.md) for details.*';
 
       let rawReplyText = `🎙️ **${headerTitle}**\n\n` +
                           `**${transcriptLabel}**: "${pipelineResult.transcript}"${captionAddon}\n` +

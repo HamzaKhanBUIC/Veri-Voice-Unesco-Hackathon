@@ -111,15 +111,31 @@ export const SourceCard: React.FC<SourceCardProps> = ({
 
       {/* Outbound Link */}
       <div className="flex items-center justify-between text-xs font-mono pt-1">
-        <a
-          href={evidence.url || '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-brand-teal-bright hover:underline inline-flex items-center gap-1 text-[11px]"
-        >
-          <span>Examine Source Data</span>
-          <span className="material-symbols-outlined text-[13px]">open_in_new</span>
-        </a>
+        {(() => {
+          const rawUrl = (evidence.url || '').trim();
+          const isSafeScheme = rawUrl.startsWith('https://') || rawUrl.startsWith('http://');
+          const safeUrl = isSafeScheme ? rawUrl : '#';
+
+          if (!isSafeScheme && rawUrl.length > 0) {
+            return (
+              <span className="text-text-muted text-[11px] inline-flex items-center gap-1 cursor-default">
+                <span>Direct Data Reference</span>
+              </span>
+            );
+          }
+
+          return (
+            <a
+              href={safeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-teal-bright hover:underline inline-flex items-center gap-1 text-[11px]"
+            >
+              <span>Examine Source Data</span>
+              <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+            </a>
+          );
+        })()}
       </div>
     </div>
   );
