@@ -278,16 +278,17 @@ You MUST respond strictly with a valid JSON object matching this schema:
 
     let lastError: Error | null = null;
     let rawText = '';
-
     const fallbackModels = [
       'llama-3.3-70b-versatile',
       'llama-3.1-8b-instant',
+      'qwen/qwen3.6-27b',
+      'openai/gpt-oss-120b',
     ];
 
     for (const apiKey of GROQ_API_KEYS) {
       for (const model of fallbackModels) {
         try {
-          const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          let response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -300,6 +301,22 @@ You MUST respond strictly with a valid JSON object matching this schema:
               response_format: { type: 'json_object' },
             }),
           });
+
+          // If Groq rejects JSON mode, retry immediately without response_format
+          if (response.status === 400) {
+            response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages,
+                temperature: 0.2,
+              }),
+            });
+          }
 
           if (response.ok) {
             const data = await response.json();
@@ -323,7 +340,8 @@ You MUST respond strictly with a valid JSON object matching this schema:
 
     let parsed: any = {};
     try {
-      parsed = JSON.parse(rawText);
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
     } catch {
       parsed = {
         verdict: 'RESEARCH_RESPONSE',
