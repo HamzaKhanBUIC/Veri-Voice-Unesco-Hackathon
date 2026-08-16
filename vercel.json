@@ -1,0 +1,35 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/backend/public/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "microphone=(self), camera=(), geolocation=(), interest-cohort=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: data: https: https://api.elevenlabs.io; connect-src 'self' blob: data: https://api.groq.com https://api.elevenlabs.io https://*.onrender.com http://localhost:3000 http://localhost:5173 http://127.0.0.1:3000 http://127.0.0.1:5173; frame-ancestors 'none'; object-src 'none';"
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,6 @@ Welcome to the technical documentation for **VeriVoice**, an automated, voice-fi
 ---
 
 ## 🚀 Quick Links
-- **Live Website:** [https://verivoice-unesco.vercel.app](https://verivoice-unesco.vercel.app)
+- **Live Website:** [https://verivoice-ten.vercel.app](https://verivoice-ten.vercel.app) / [https://verivoice-unesco.vercel.app](https://verivoice-unesco.vercel.app)
 - **Discord Bot Invite:** [Add VeriVoice to Discord](https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=101376&scope=bot%20applications.commands)
 - **GitHub Repository:** [HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon](https://github.com/HamzaKhanBUIC/Veri-Voice-Unesco-Hackathon)

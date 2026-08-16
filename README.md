@@ -15,7 +15,7 @@
 
 | Platform | Access Link | Description |
 |---|---|---|
-| 🖥️ **Web Application (Vercel)** | [**verivoice-unesco.vercel.app**](https://verivoice-unesco.vercel.app) | Full hands-free Voice Sanctuary with real-time Acoustic Core and one-tap judge demo inquiries. |
+| 🖥️ **Web Application (Vercel)** | [**verivoice-ten.vercel.app**](https://verivoice-ten.vercel.app) / [**verivoice-unesco.vercel.app**](https://verivoice-unesco.vercel.app) | Full hands-free Voice Sanctuary with real-time Acoustic Core and one-tap judge demo inquiries. |
 | 🤖 **Discord Bot (Cloud)** | [**Invite VeriVoice Bot**](https://discord.com/api/oauth2/authorize?client_id=1537205576809840702&permissions=101376&scope=bot%20applications.commands) | 24/7 cloud Discord bot with `/verify`, `/general`, `/mil`, `/voice`, and native voice note processing. |
 | 📂 **Documentation** | [**docs/README.md**](docs/README.md) | Comprehensive engineering documentation, architecture diagrams, and security specifications. |
 
