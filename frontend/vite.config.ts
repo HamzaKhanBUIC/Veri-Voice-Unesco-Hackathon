@@ -27,9 +27,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: process.env.VERCEL ? 'dist' : path.resolve(__dirname, '../backend/public'),
+    outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: false,
-    chunkSizeWarningLimit: 600,
   },
 });
