@@ -434,33 +434,38 @@ export const TalkPage: React.FC<TalkPageProps> = ({
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <button
                   onClick={() => handleQuickFollowUp('Is the Earth flat or spherical?')}
-                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all flex items-center gap-1.5"
                 >
-                  "Is Earth flat?" 🌍
+                  <span className="text-[10px] font-mono text-brand-teal-bright">EN</span>
+                  <span>"Is Earth flat?"</span>
                 </button>
                 <button
                   onClick={() => handleQuickFollowUp('کیا پولیو کے قطرے بچوں کے لیے محفوظ ہیں؟')}
-                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-urdu text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-urdu text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all flex items-center gap-1.5"
                 >
-                  "کیا پولیو کے قطرے محفوظ ہیں؟"
+                  <span className="text-[10px] font-mono text-brand-teal-bright">UR</span>
+                  <span>"کیا پولیو کے قطرے محفوظ ہیں؟"</span>
                 </button>
                 <button
                   onClick={() => handleQuickFollowUp('Do vaccines cause autism?')}
-                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all flex items-center gap-1.5"
                 >
-                  "Do vaccines cause autism?" 💉
+                  <span className="text-[10px] font-mono text-brand-teal-bright">EN</span>
+                  <span>"Do vaccines cause autism?"</span>
                 </button>
                 <button
                   onClick={() => handleQuickFollowUp('¿Las vacunas causan autismo?')}
-                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all flex items-center gap-1.5"
                 >
-                  "¿Las vacunas causan autismo?" 🇪🇸
+                  <span className="text-[10px] font-mono text-brand-teal-bright">ES</span>
+                  <span>"¿Las vacunas causan autismo?"</span>
                 </button>
                 <button
                   onClick={() => handleQuickFollowUp('Apakah bawang putih menyembuhkan corona?')}
-                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all"
+                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-teal-bright/40 text-xs font-sans text-text-secondary hover:text-text-primary rounded-xl border border-white/[0.08] transition-all flex items-center gap-1.5"
                 >
-                  "Bawang putih & Covid?" 🇮🇩
+                  <span className="text-[10px] font-mono text-brand-teal-bright">ID</span>
+                  <span>"Bawang putih & Covid?"</span>
                 </button>
               </div>
             </div>
