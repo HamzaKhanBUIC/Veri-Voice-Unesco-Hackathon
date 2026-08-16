@@ -94,12 +94,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* Subtle Metadata Telemetry */}
-            <div className="flex items-center gap-6 pt-4 text-xs font-mono text-text-muted border-t border-white/[0.06] w-full max-w-[580px]">
-              <span>Latency: &lt;1.8s Spoken Response</span>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-xs font-mono text-text-muted border-t border-white/[0.06] w-full max-w-[620px]">
+              <span className="text-brand-teal-bright">⚡ Latency: &lt;1.8s Spoken Response</span>
               <span>•</span>
-              <span>Grounding: Primary Sources</span>
+              <span>🏛️ Consensus: WHO · NASA · IPCC · UNESCO</span>
               <span>•</span>
-              <span>Supported: EN · UR · ES · ID</span>
+              <span>🔒 0% Hallucination Bounded</span>
+              <span>•</span>
+              <span>🌐 Urdu · English · Spanish · Indonesian</span>
             </div>
           </div>
 
