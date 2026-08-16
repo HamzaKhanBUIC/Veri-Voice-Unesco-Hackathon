@@ -4,13 +4,10 @@ const ENV_GROQ_KEYS = import.meta.env.VITE_GROQ_API_KEYS
   ? import.meta.env.VITE_GROQ_API_KEYS.split(',').map((k: string) => k.trim()).filter(Boolean)
   : [];
 
-const GROQ_API_KEYS = ENV_GROQ_KEYS.length > 0 ? ENV_GROQ_KEYS : [
-  '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',
-  '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',
-  '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',
-  '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',
-  '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',
-];
+const GROQ_API_KEYS = [
+  ...ENV_GROQ_KEYS,
+  import.meta.env.VITE_GROQ_API_KEY,
+].filter(Boolean);
 
 const PRIMARY_SOURCES_CATALOG: Record<string, EvidenceItem[]> = {
   health: [
@@ -104,11 +101,6 @@ const ENV_ELEVEN_KEYS = import.meta.env.VITE_ELEVENLABS_API_KEYS
 const ELEVENLABS_API_KEYS = [
   ...ENV_ELEVEN_KEYS,
   import.meta.env.VITE_ELEVENLABS_API_KEY,
-  'sk_db763c5aaf770a5645a235c26cc635b62200cef1d13c7187',
-  'sk_2a7e759631dd39983e95dfac6b68a7cd05231971dd51b96c',
-  'sk_39c9897b634d15c36dcafa284b792d9192e0ffe0e1876670',
-  'sk_51d6959ba46d56eedd06d8616c42c3767940b9a5d6832840',
-  'sk_afceee03c93d2fa383dc98ffd8511bcbc36752fc2501fef5',
 ].filter(Boolean);
 
 const ELEVENLABS_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
