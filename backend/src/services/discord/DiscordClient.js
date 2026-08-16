@@ -28,6 +28,20 @@ class DiscordClient {
           repliedUser: false,
         },
       });
+
+      // Production Observability: Safe gateway lifecycle logs (never logs tokens)
+      this.client.on('shardDisconnect', (event, id) => {
+        console.warn(`⚠️ Discord Gateway connection lost (Shard ${id}). Automatic reconnect queued.`);
+      });
+      this.client.on('shardReconnecting', (id) => {
+        console.log(`🔄 Discord Gateway reconnecting (Shard ${id})...`);
+      });
+      this.client.on('shardResume', (id, replayedEvents) => {
+        console.log(`✅ Discord Gateway connection restored (Shard ${id}, replayed ${replayedEvents} events).`);
+      });
+      this.client.on('error', (err) => {
+        console.warn(`⚠️ Discord Gateway event error: ${err.message}`);
+      });
     }
   }
 
