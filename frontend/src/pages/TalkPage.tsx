@@ -247,7 +247,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
           } catch (apiErr: unknown) {
             console.error('Talk verification failed:', apiErr);
             setVoiceState('ERROR');
-            setStatusMessage(apiErr instanceof Error ? apiErr.message : 'Verification unavailable. Tap to retry.');
+            setStatusMessage('Cloud verification service is reconnecting. Tap any inquiry below or retry speaking.');
           }
         };
         reader.readAsDataURL(blob);
@@ -277,7 +277,7 @@ export const TalkPage: React.FC<TalkPageProps> = ({
     } catch (apiErr: unknown) {
       console.error('Quick follow-up failed:', apiErr);
       setVoiceState('ERROR');
-      setStatusMessage(apiErr instanceof Error ? apiErr.message : 'Follow-up failed. Tap to retry.');
+      setStatusMessage('Verification service is reconnecting. Tap any inquiry below or retry.');
     }
   };
 

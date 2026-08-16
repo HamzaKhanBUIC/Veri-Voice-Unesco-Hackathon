@@ -139,16 +139,16 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      {/* 1. SERVER WAKING UP NOTIFICATION BAR */}
+      {/* 1. SERVER WAKING UP / SLEEPING NOTICE BANNER */}
       {serverState === 'WAKING' && !dismissNotice && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-brand-navy/60 border-b border-brand-teal/20 px-4 py-2.5 text-center text-xs font-mono text-text-secondary flex items-center justify-center gap-3 animate-fade-in backdrop-blur-md">
-          <div className="w-2 h-2 rounded-full bg-brand-teal-bright animate-ping" />
+        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-center text-xs font-mono text-amber-200 flex items-center justify-center gap-2.5 animate-fade-in backdrop-blur-md shadow-lg">
+          <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
           <span>
-            {t.serverNotice.wakingTitle} ({wakingSeconds}s)... {t.serverNotice.pleaseWait}
+            ⚡ <strong>Cloud Server Notice:</strong> Remote backend is waking up from sleep ({wakingSeconds}s). Direct Edge AI verification is active.
           </span>
           <button
             onClick={() => setDismissNotice(true)}
-            className="text-text-muted hover:text-text-primary ml-2 text-sm"
+            className="text-amber-400/80 hover:text-amber-100 ml-2 text-sm font-bold"
             title="Dismiss notice"
           >
             ✕
