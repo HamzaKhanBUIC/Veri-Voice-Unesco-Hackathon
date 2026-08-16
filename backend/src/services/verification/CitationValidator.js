@@ -2,7 +2,7 @@ const SourceAuthorityFilter = require('../retrieval/SourceAuthorityFilter');
 
 /**
  * Citation Validator & Integrity Guardrail.
- * Rejects model-memory URL hallucinations, malformed URLs, and unverified/scam sources.
+ * Rejects model-memory URL hallucinations, malformed URLs, dangerous URL schemes, and unverified/scam sources.
  * Validates citations against retrieved search evidence and established authoritative institutional registries.
  */
 class CitationValidator {
@@ -51,10 +51,21 @@ class CitationValidator {
       const citeClaimId = cite.claimId || cite.id;
       const cleanUrl = citeUrl.toLowerCase();
 
-      // Rule 1: Check URL validity
+      // Rule 1: Check URL validity and reject dangerous schemes
       if (citeUrl) {
+        if (cleanUrl.startsWith('javascript:') || cleanUrl.startsWith('data:') || cleanUrl.startsWith('file:') || cleanUrl.startsWith('vbscript:')) {
+          console.warn(`⚠️ CitationValidator: Rejecting dangerous URI scheme: '${citeUrl}'`);
+          return { valid: false, reason: `Dangerous URI scheme detected: '${citeUrl}'` };
+        }
+
         if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
           return { valid: false, reason: `Malformed citation URL: '${citeUrl}'` };
+        }
+
+        try {
+          new URL(citeUrl);
+        } catch (e) {
+          return { valid: false, reason: `Invalid citation URL syntax: '${citeUrl}'` };
         }
 
         const domain = SourceAuthorityFilter.extractDomain(cleanUrl);

@@ -14,7 +14,8 @@ const fs = require('fs');
 /**
  * Discord Adapter Service.
  * Manages full lifecycle of Discord Bot: Gateway listeners, Rate limiting, Concurrency queues,
- * Slash commands, Text mentions (@VeriVoice), Voice Note attachments, and Audio Pipeline delegation.
+ * Idempotency deduplication, Slash commands, Text mentions, Voice Note attachments, and Audio Pipeline delegation.
+ * Enforces strict mention isolation and privacy-first ephemeral data handling.
  */
 class DiscordService {
   constructor(options = {}) {
@@ -37,6 +38,36 @@ class DiscordService {
 
     this.rateLimiter = options.rateLimiter || new RateLimiter({ maxRequests: 5, windowMs: 60000 });
     this.concurrencyLimiter = options.concurrencyLimiter || new ConcurrencyLimiter({ maxConcurrent: 3 });
+
+    // Idempotency cache: tracks processed message IDs and interaction IDs (2-min TTL)
+    this.processedEvents = new Map();
+    this.idempotencyTtlMs = 120000;
+  }
+
+  /**
+   * Checks and registers an event ID to prevent duplicate replay processing.
+   * @param {string} eventId 
+   * @returns {boolean} True if event was already processed (duplicate)
+   */
+  isDuplicateEvent(eventId) {
+    if (!eventId || typeof eventId !== 'string') return false;
+    const now = Date.now();
+    this.cleanupExpiredEvents(now);
+
+    if (this.processedEvents.has(eventId)) {
+      return true;
+    }
+
+    this.processedEvents.set(eventId, now);
+    return false;
+  }
+
+  cleanupExpiredEvents(now = Date.now()) {
+    for (const [id, timestamp] of this.processedEvents.entries()) {
+      if (now - timestamp > this.idempotencyTtlMs) {
+        this.processedEvents.delete(id);
+      }
+    }
   }
 
   /**
@@ -58,6 +89,12 @@ class DiscordService {
     client.on('messageCreate', async (message) => {
       if (!message || message.author?.bot) return;
 
+      const messageId = message.id;
+      if (messageId && this.isDuplicateEvent(messageId)) {
+        console.log(`ℹ️ DiscordService: Skipping duplicate message event (${messageId})`);
+        return;
+      }
+
       const userId = message.author?.id || 'unknown_user';
       const requestId = `req_msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -65,7 +102,10 @@ class DiscordService {
       const globalCheck = this.rateLimiter.checkGlobal();
       if (!globalCheck.allowed) {
         try {
-          await message.reply('⚠️ System busy under high traffic (Global rate limit reached). Please try again in a moment.');
+          await message.reply({
+            content: '⚠️ System busy under high traffic (Global rate limit reached). Please try again in a moment.',
+            allowedMentions: { parse: [], repliedUser: false },
+          });
         } catch (e) {}
         return;
       }
@@ -74,7 +114,10 @@ class DiscordService {
       const rateCheck = this.rateLimiter.check(userId);
       if (!rateCheck.allowed) {
         try {
-          await message.reply('⚠️ Rate limit exceeded. Please wait a moment before sending more requests.');
+          await message.reply({
+            content: '⚠️ Rate limit exceeded. Please wait a moment before sending more requests.',
+            allowedMentions: { parse: [], repliedUser: false },
+          });
         } catch (e) {}
         return;
       }
@@ -87,20 +130,28 @@ class DiscordService {
       });
 
       if (audioAttachment) {
-        const captionText = message.content ? message.content.replace(/<@!?\d+>/g, '').trim() : '';
+        const rawCaption = message.content ? message.content.replace(/<@!?\d+>/g, '').trim() : '';
+        const captionText = rawCaption.length > 500 ? rawCaption.substring(0, 500) : rawCaption;
         await this.handleAudioAttachment(message, audioAttachment, { requestId, captionText });
         return;
       }
 
       // Handle Direct Bot Mention (@VeriVoice <claim/question>)
       if (client.user && message.mentions?.has(client.user)) {
-        const cleanContent = message.content.replace(/<@!?\d+>/g, '').trim();
+        let cleanContent = message.content.replace(/<@!?\d+>/g, '').trim();
 
         if (!cleanContent) {
           try {
-            await message.reply('سلام! VeriVoice voice verification bot yahan hai. Mujhse claim verify karwane ke liye text poochhein ya voice note bhejein! (/help for details)');
+            await message.reply({
+              content: 'سلام! VeriVoice voice verification bot yahan hai. Mujhse claim verify karwane ke liye text poochhein ya voice note bhejein! (/help for details)',
+              allowedMentions: { parse: [], repliedUser: false },
+            });
           } catch (e) {}
           return;
+        }
+
+        if (cleanContent.length > 500) {
+          cleanContent = cleanContent.substring(0, 500);
         }
 
         try {
@@ -111,11 +162,17 @@ class DiscordService {
           };
 
           const responsePayload = await DiscordCommands.handleInteraction(fakeInteraction, this.pipeline);
-          await message.reply(responsePayload.content);
+          await message.reply({
+            content: responsePayload.content,
+            allowedMentions: { parse: [], repliedUser: false },
+          });
         } catch (err) {
           console.error(`❌ DiscordService mention handler error: ${err.message}`);
           try {
-            await message.reply('⚠️ An error occurred while verifying your claim. Please try again.');
+            await message.reply({
+              content: '⚠️ An error occurred while verifying your claim. Please try again.',
+              allowedMentions: { parse: [], repliedUser: false },
+            });
           } catch (e) {}
         }
       }
@@ -125,13 +182,23 @@ class DiscordService {
     client.on('interactionCreate', async (interaction) => {
       if (!interaction || !interaction.isChatInputCommand()) return;
 
+      const interactionId = interaction.id;
+      if (interactionId && this.isDuplicateEvent(interactionId)) {
+        console.log(`ℹ️ DiscordService: Skipping duplicate interaction event (${interactionId})`);
+        return;
+      }
+
       const userId = interaction.user?.id || 'unknown_user';
       const requestId = `req_slash_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
       const globalCheck = this.rateLimiter.checkGlobal();
       if (!globalCheck.allowed) {
         try {
-          await interaction.reply({ content: '⚠️ System busy under high traffic (Global rate limit reached). Please try again in a moment.', ephemeral: true });
+          await interaction.reply({
+            content: '⚠️ System busy under high traffic (Global rate limit reached). Please try again in a moment.',
+            ephemeral: true,
+            allowedMentions: { parse: [] },
+          });
         } catch (e) {}
         return;
       }
@@ -139,7 +206,11 @@ class DiscordService {
       const rateCheck = this.rateLimiter.check(userId);
       if (!rateCheck.allowed) {
         try {
-          await interaction.reply({ content: '⚠️ Rate limit exceeded. Please wait a moment before sending more requests.', ephemeral: true });
+          await interaction.reply({
+            content: '⚠️ Rate limit exceeded. Please wait a moment before sending more requests.',
+            ephemeral: true,
+            allowedMentions: { parse: [] },
+          });
         } catch (e) {}
         return;
       }
@@ -147,11 +218,17 @@ class DiscordService {
       try {
         await interaction.deferReply();
         const responsePayload = await DiscordCommands.handleInteraction({ ...interaction, requestId }, this.pipeline);
-        await interaction.editReply(responsePayload.content);
+        await interaction.editReply({
+          content: responsePayload.content,
+          allowedMentions: { parse: [] },
+        });
       } catch (err) {
         console.error(`❌ DiscordService command error: ${err.message}`);
         if (interaction.deferred || interaction.replied) {
-          await interaction.editReply('⚠️ An error occurred while executing this command. Please try again.');
+          await interaction.editReply({
+            content: '⚠️ An error occurred while executing this command. Please try again.',
+            allowedMentions: { parse: [] },
+          });
         }
       }
     });
@@ -161,7 +238,7 @@ class DiscordService {
 
   /**
    * Processes incoming Discord audio attachment end-to-end through StandalonePipeline.
-   * Enforces concurrency limiting, validates audio output, and formats clean product card.
+   * Enforces concurrency limiting, validates audio output, formats clean product card, and purges temp files.
    * @param {object} message - Discord message object
    * @param {object} attachment - Discord attachment object
    * @param {object} [options] - Optional requestId and captionText
@@ -172,7 +249,10 @@ class DiscordService {
     if (!valResult.valid) {
       console.warn(`⚠️ [${requestId}] DiscordMedia validation warning: ${valResult.error}`);
       try {
-        await message.reply(`⚠️ ${valResult.error}`);
+        await message.reply({
+          content: `⚠️ ${valResult.error}`,
+          allowedMentions: { parse: [], repliedUser: false },
+        });
       } catch (e) {}
       return;
     }
@@ -182,7 +262,10 @@ class DiscordService {
 
     try {
       try {
-        progressMsg = await message.reply('🎙️ **Voice note received.** Transcribing and verifying audio... ⏳');
+        progressMsg = await message.reply({
+          content: '🎙️ **Voice note received.** Transcribing and verifying audio... ⏳',
+          allowedMentions: { parse: [], repliedUser: false },
+        });
       } catch (e) {}
 
       const fileName = attachment.name || attachment.filename || 'voice.ogg';
@@ -229,17 +312,25 @@ class DiscordService {
         sourceCitations = '\n\n**Sources:**\n' + pipelineResult.sources.slice(0, 2).map((s) => `• [${s.organization || s.sourceTitle || 'Official Source'}](${s.url || 'https://who.int'})`).join('\n');
       }
 
-      let replyText = `🎙️ **${headerTitle}**\n\n` +
-                        `**${transcriptLabel}**: "${pipelineResult.transcript}"${captionAddon}\n` +
-                        `**${verdictLabel}**: ${verdictBadge}\n\n` +
-                        `**${explanationLabel}**: ${pipelineResult.responseText}` +
-                        sourceCitations;
+      const privacyFooter = '\n\n🔒 *Privacy: Voice notes are processed temporarily and immediately purged after verification.*';
+
+      let rawReplyText = `🎙️ **${headerTitle}**\n\n` +
+                          `**${transcriptLabel}**: "${pipelineResult.transcript}"${captionAddon}\n` +
+                          `**${verdictLabel}**: ${verdictBadge}\n\n` +
+                          `**${explanationLabel}**: ${pipelineResult.responseText}` +
+                          sourceCitations +
+                          privacyFooter;
 
       if (!hasValidAudio) {
-        replyText += `\n\n🔊 *Spoken audio response is currently unavailable.*`;
+        rawReplyText += `\n\n🔊 *Spoken audio response is currently unavailable.*`;
       }
 
-      const sendOptions = { content: replyText };
+      const replyText = DiscordCommands.sanitizeOutputText(rawReplyText);
+
+      const sendOptions = {
+        content: replyText,
+        allowedMentions: { parse: [], repliedUser: false },
+      };
 
       if (hasValidAudio) {
         sendOptions.files = [
@@ -268,12 +359,25 @@ class DiscordService {
       const errorReply = '⚠️ Unable to determine a conclusive verification verdict for this voice note. (UNCERTAIN)';
       if (progressMsg && typeof progressMsg.edit === 'function') {
         try {
-          await progressMsg.edit(errorReply);
+          await progressMsg.edit({
+            content: errorReply,
+            allowedMentions: { parse: [], repliedUser: false },
+          });
         } catch (e) {
-          try { await message.reply(errorReply); } catch (e2) {}
+          try {
+            await message.reply({
+              content: errorReply,
+              allowedMentions: { parse: [], repliedUser: false },
+            });
+          } catch (e2) {}
         }
       } else {
-        try { await message.reply(errorReply); } catch (e) {}
+        try {
+          await message.reply({
+            content: errorReply,
+            allowedMentions: { parse: [], repliedUser: false },
+          });
+        } catch (e) {}
       }
     } finally {
       DiscordMedia.safeCleanup(tempInputPath);

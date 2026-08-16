@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, Partials, REST, Routes } = require('discord.j
 /**
  * Discord Client Wrapper and OAuth2 Gateway Manager.
  * Encapsulates Discord Bot login, permissions, slash command registration, and gateway event handlers.
+ * Enforces minimal privilege intents and global mention protection (allowedMentions).
  */
 class DiscordClient {
   constructor(options = {}) {
@@ -17,11 +18,15 @@ class DiscordClient {
         intents: [
           GatewayIntentBits.Guilds,
           GatewayIntentBits.GuildMessages,
-          GatewayIntentBits.MessageContent,
-          GatewayIntentBits.GuildMessageReactions,
+          GatewayIntentBits.MessageContent, // Required to read verified claims and audio attachments
           GatewayIntentBits.DirectMessages,
         ],
         partials: [Partials.Channel, Partials.Message],
+        // Global Security Guardrail: Disallow all automatic @everyone, @here, and role pings
+        allowedMentions: {
+          parse: [],
+          repliedUser: false,
+        },
       });
     }
   }

@@ -3,6 +3,7 @@ const GuidanceService = require('../guidance/GuidanceService');
 /**
  * Discord Slash Commands Definition and Handler.
  * Supports /verify, /general, /health, /science, /climate, /disaster, /education, /help, /about.
+ * Enforces input bounding (500 chars), mention escaping (@everyone protection), and UNESCO MIL disclosures.
  */
 class DiscordCommands {
   /**
@@ -16,7 +17,7 @@ class DiscordCommands {
         options: [
           {
             name: 'claim',
-            description: 'The claim to verify',
+            description: 'The claim to verify (max 500 chars)',
             type: 3, // STRING
             required: true,
           },
@@ -28,7 +29,7 @@ class DiscordCommands {
         options: [
           {
             name: 'question',
-            description: 'The research question',
+            description: 'The research question (max 500 chars)',
             type: 3,
             required: true,
           },
@@ -40,7 +41,7 @@ class DiscordCommands {
         options: [
           {
             name: 'input',
-            description: 'Health claim or question',
+            description: 'Health claim or question (max 500 chars)',
             type: 3,
             required: true,
           },
@@ -52,7 +53,7 @@ class DiscordCommands {
         options: [
           {
             name: 'input',
-            description: 'Science claim or question',
+            description: 'Science claim or question (max 500 chars)',
             type: 3,
             required: true,
           },
@@ -64,7 +65,7 @@ class DiscordCommands {
         options: [
           {
             name: 'input',
-            description: 'Climate/weather claim or question',
+            description: 'Climate/weather claim or question (max 500 chars)',
             type: 3,
             required: true,
           },
@@ -76,7 +77,7 @@ class DiscordCommands {
         options: [
           {
             name: 'input',
-            description: 'Disaster warning or question',
+            description: 'Disaster warning or question (max 500 chars)',
             type: 3,
             required: true,
           },
@@ -88,7 +89,7 @@ class DiscordCommands {
         options: [
           {
             name: 'input',
-            description: 'Education claim or question',
+            description: 'Education claim or question (max 500 chars)',
             type: 3,
             required: true,
           },
@@ -100,9 +101,21 @@ class DiscordCommands {
       },
       {
         name: 'about',
-        description: 'About VeriVoice Evidence Verification Platform',
+        description: 'VeriVoice Architecture & Methodology — UNESCO MIL Grounding & Safety Platform',
       },
     ];
+  }
+
+  /**
+   * Sanitizes output strings against mass mention injection (@everyone, @here).
+   * @param {string} text 
+   * @returns {string}
+   */
+  static sanitizeOutputText(text) {
+    if (!text || typeof text !== 'string') return '';
+    return text
+      .replace(/@everyone/g, '@\u200beveryone')
+      .replace(/@here/g, '@\u200bhere');
   }
 
   /**
@@ -126,8 +139,9 @@ class DiscordCommands {
                       card.modes.map((m) => `• \`${m.command}\`: ${m.description}`).join('\n') + `\n\n` +
                       `**Domain Shortcuts:**\n` +
                       card.shortcuts.map((s) => `• \`${s.command} <text>\`: ${s.label}`).join('\n') + `\n\n` +
-                      `*${card.voiceNotice}*`;
-      return { type: 'text', content };
+                      `*${card.voiceNotice}*\n\n` +
+                      `🔒 **Privacy**: Voice notes & messages are processed temporarily for transcription and verification. Audio is immediately erased upon completion.`;
+      return { type: 'text', content: DiscordCommands.sanitizeOutputText(content) };
     }
 
     if (commandName === 'about') {
@@ -136,8 +150,9 @@ class DiscordCommands {
                       `${card.description}\n\n` +
                       `**Key Differentiators:**\n` +
                       card.differentiators.map((d) => `• ${d}`).join('\n') + `\n\n` +
-                      `*${card.datasetNotice}*`;
-      return { type: 'text', content };
+                      `*${card.datasetNotice}*\n\n` +
+                      `🔒 **Data Policy**: Zero persistent tracking. Verification pipelines operate in memory with strict citation allowlists.`;
+      return { type: 'text', content: DiscordCommands.sanitizeOutputText(content) };
     }
 
     // Determine requested mode and domain hint from command
@@ -152,7 +167,7 @@ class DiscordCommands {
       if (commandName === 'climate') requestedDomain = 'WEATHER_CLIMATE';
     }
 
-    const userText = interaction.options?.getString ? (
+    let userText = interaction.options?.getString ? (
       interaction.options.getString('claim') ||
       interaction.options.getString('question') ||
       interaction.options.getString('input')
@@ -160,6 +175,11 @@ class DiscordCommands {
 
     if (!userText || typeof userText !== 'string' || userText.trim() === '') {
       return { type: 'text', content: '⚠️ Please enter a valid claim or question.' };
+    }
+
+    userText = userText.trim();
+    if (userText.length > 500) {
+      userText = userText.substring(0, 500);
     }
 
     // Execute through retrieval & verification engine
@@ -205,15 +225,17 @@ class DiscordCommands {
     const howChecked = '\n\n🛡️ *How VeriVoice checked this*:\n' +
                        `Retrieved live evidence ➔ evaluated source authority ➔ compared evidence ➔ validated citations.`;
 
-    const content = `${header}\n\n` +
-                    `**Claim / Question**: "${verifResult.languageMetadata?.originalText || userText}"\n` +
-                    `**Domain**: ${domainIcon}\n` +
-                    (!isResearch ? `**Verdict**: ${verdictBadge}\n` : '') +
-                    `**Confidence**: ${confidenceLabel}\n\n` +
-                    `**${isResearch ? 'Answer' : 'Explanation'}**: ${verifResult.explanation || verifResult.answer}` +
-                    evidenceBullets +
-                    sourceCitations +
-                    howChecked;
+    const rawContent = `${header}\n\n` +
+                       `**Claim / Question**: "${verifResult.languageMetadata?.originalText || userText}"\n` +
+                       `**Domain**: ${domainIcon}\n` +
+                       (!isResearch ? `**Verdict**: ${verdictBadge}\n` : '') +
+                       `**Confidence**: ${confidenceLabel}\n\n` +
+                       `**${isResearch ? 'Answer' : 'Explanation'}**: ${verifResult.explanation || verifResult.answer}` +
+                       evidenceBullets +
+                       sourceCitations +
+                       howChecked;
+
+    const content = DiscordCommands.sanitizeOutputText(rawContent);
 
     return {
       type: 'text',

@@ -13,11 +13,16 @@ const GroqVerificationProvider = require('../services/verification/GroqVerificat
 const MockVerificationProvider = require('../services/verification/MockVerificationProvider');
 const { conversationManager } = require('../services/conversation/ConversationManager');
 const { validateConversationContext } = require('../schemas/conversationSchema');
+const { verifyProtectionMiddleware, ttsProtectionMiddleware } = require('../middleware/rateLimitMiddleware');
 
 const tmpDir = path.join(__dirname, '../../tmp');
 if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir, { recursive: true });
 }
+
+const ALLOWED_AUDIO_EXTENSIONS = new Set(['webm', 'ogg', 'opus', 'mp3', 'wav', 'm4a']);
+const MAX_CLAIM_TEXT_LENGTH = 2000;
+const MAX_AUDIO_BUFFER_BYTES = 10 * 1024 * 1024; // 10MB limit
 
 // Staging evidence fallback when knowledge/claims.json is empty
 const stagingCandidatesPath = path.join(process.cwd(), 'analysis', 'validated-candidate-health-evidence.json');
@@ -50,11 +55,22 @@ if (fs.existsSync(stagingCandidatesPath)) {
 /**
  * POST /api/verify
  * Handles live browser voice audio, text claims, and multi-turn conversational Talk queries.
+ * Protected by verifyProtectionMiddleware (rate limits & concurrency).
  */
-router.post('/api/verify', async (req, res) => {
+router.post('/api/verify', verifyProtectionMiddleware, async (req, res) => {
   const startTime = Date.now();
   let inputAudioPath = null;
   let userClaimText = req.body.claimText || null;
+
+  // Enforce maximum length on incoming claim text
+  if (userClaimText && typeof userClaimText === 'string') {
+    if (userClaimText.length > MAX_CLAIM_TEXT_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        error: `Claim text exceeds maximum allowed length of ${MAX_CLAIM_TEXT_LENGTH} characters.`,
+      });
+    }
+  }
 
   try {
     // 0. Validate Conversation Context if provided
